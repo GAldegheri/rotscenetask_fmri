@@ -1,0 +1,326 @@
+import sys
+from utils import Options
+import numpy as np
+from nipype import Node, JoinNode, MapNode, Workflow, \
+    IdentityInterface, Function
+from configs import project_dir
+import pandas as pd
+
+# ---------------------------------------------------------------------------------
+
+def decoding_approaches(sub, roi, approach, task, model, dataformat):
+    """
+    Calls the specific loading functions and decoding
+    functions needed for a given approach (CV, train-test),
+    data format (betas, TRs, trial betas), task and model (e.g.
+    split into three partitions, into separate views)
+    
+    - opt: Options object, containing task, model, sub, roi
+    - approach: str, one of 'CV', 'splithalf', 'traintest', 'corr_traintest'
+    - dataformat: str, one of 'TRs', 'betas', 'trialbetas' or a tuple 
+        in the case of train/test splits
+    """
+    import numpy as np
+    import sys
+    sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis')
+    from mvpa.mvpa_utils import correct_labels, assign_loadfun
+    from mvpa.decoding import decode_traintest, decode_CV, \
+        decode_SplitHalf, traintest_dist
+    from utils import Options, split_options
+    from configs import project_dir, bids_dir
+    import os
+    
+    opt = Options(
+        sub=sub,
+        roi=roi,
+        task=task,
+        model=model
+    )
+    
+    if isinstance(dataformat, tuple):
+        if approach not in ['traintest', 'corr_traintest']:
+            raise ValueError('Data format was provided as a tuple, but approach is not train/test!')
+        traindataformat, testdataformat = dataformat
+        loadfun_train = assign_loadfun(traindataformat)
+        loadfun_test = assign_loadfun(testdataformat)
+        #whichformat = f'{dataformat[0]}-{dataformat[1]}' # for dict key
+    else:
+        traindataformat = testdataformat = dataformat
+        loadfun = assign_loadfun(dataformat)
+        #whichformat = dataformat
+        
+    if 'contr' in opt.roi: # functional contrast
+        roi_basedir = os.path.join(bids_dir, 'derivatives', 'spm-preproc', 
+                                   'derivatives', 'roi-masks')
+        mask_templ = os.path.join(roi_basedir, '{:s}/{:s}_' + opt.roi + '.nii')
+    else: # only anatomical map
+        roi_basedir = os.path.join(project_dir, 'anat_roi_masks')
+        mask_templ = os.path.join(roi_basedir, opt.roi + '.nii')
+        
+    if approach=='CV':
+        # Only need one task and one model
+        
+        #key = f'CV-{opt.task}m{opt.model:g}_{niceroi}_{whichformat}'
+        traintask = testtask = opt.task
+        trainmodel = testmodel = opt.model
+        
+        DS = loadfun(opt, mask_templ=mask_templ)
+        if DS != None:
+            
+            DS = correct_labels(DS, opt)
+            DS = DS.remove_nonfinite_features()
+            res = decode_CV(DS, opt)
+        
+    elif approach=='splithalf':
+        # almost the same as CV - also just one dataset/task/model
+        
+        #key = f'splithalf-{opt.task}m{opt.model:g}_{niceroi}_{whichformat}'
+        traintask = testtask = opt.task
+        trainmodel = testmodel = opt.model
+        
+        DS = loadfun(opt, mask_templ=mask_templ)
+        if DS != None:
+            
+            DS = correct_labels(DS, opt)
+            DS = DS.remove_nonfinite_features()
+            res = decode_SplitHalf(DS, opt)
+        
+    elif approach in ['traintest', 'corr_traintest']:
+        
+        assert isinstance(opt.task, tuple) and isinstance(opt.model, tuple), \
+            'For train/test, 2 tasks and 2 models must be provided as a tuple!'
+        
+        train_opt, test_opt = split_options(opt)
+        traintask = train_opt.task
+        trainmodel = train_opt.model
+        testtask = test_opt.task
+        testmodel = test_opt.model
+        
+        # key = f'train-{train_opt.task}m{train_opt.model:g}' + \
+        #     f'-test-{test_opt.task}m{test_opt.model:g}' + \
+        #         f'_{niceroi}_{whichformat}'
+        
+        # if approach=='corr_traintest':
+        #     key = 'corr-' + key
+        
+        try:
+            trainDS = loadfun(train_opt, mask_templ=mask_templ)
+        except:
+            trainDS = loadfun_train(train_opt, mask_templ=mask_templ)
+        
+        if trainDS != None:
+            
+            trainDS = correct_labels(trainDS, train_opt)
+            
+            try:
+                testDS = loadfun(test_opt, mask_templ=mask_templ)
+            except:
+                testDS = loadfun_test(test_opt, mask_templ=mask_templ)
+            
+            testDS = correct_labels(testDS, test_opt)
+            
+            nanmask = np.logical_and(np.all(np.isfinite(trainDS.samples), axis=0),\
+                np.all(np.isfinite(testDS.samples), axis=0))
+            trainDS = trainDS[:, nanmask]
+            testDS = testDS[:, nanmask]
+            
+            if approach=='traintest':
+                res = decode_traintest(trainDS, testDS, train_opt, test_opt)
+            elif approach=='corr_traintest':
+                res = traintest_dist(trainDS, testDS, train_opt, test_opt)
+        
+        else:
+            
+            res = None
+    
+    if res is not None:
+        res['subject'] = sub
+        res['roi'] = roi
+        res['approach'] = approach
+        res['traindataformat'] = traindataformat
+        res['testdataformat'] = testdataformat
+        res['traintask'] = traintask
+        res['testtask'] = testtask
+        res['trainmodel'] = trainmodel
+        res['testmodel'] = testmodel
+        
+        return res
+    else:
+        return np.nan
+                
+# ---------------------------------------------------------------------------------
+
+# Stupid function to gather results
+def partial_join(this_reslist):
+    return this_reslist
+
+# ---------------------------------------------------------------------------------
+        
+def save_allres(res_list, out_file):
+    """
+    Collects results from the different Nipype jobs,
+    and saves them into a single file.
+    """
+    import os
+    import sys
+    sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis')
+    from configs import mvpa_outdir as data_dir
+    import pandas as pd
+    import pdb
+    
+    flat_list = [] # input is a list of lists, flatten into single list
+    for r in res_list:
+        flat_list.extend(r)
+    
+    allres = [r for r in flat_list if not (isinstance(r, float) and pd.isna(r))]
+    
+    #pdb.set_trace()
+    
+    if len(allres) > 0:
+        allres = pd.concat(allres)
+        fpath = os.path.join(data_dir, out_file)
+        allres.to_csv(fpath, index=False)
+        print('Saving to ', fpath)
+        
+    else:
+        print('No results to save.')
+        
+    return
+
+# ---------------------------------------------------------------------------------
+ 
+def main():
+     
+    # Subject and ROI list
+    
+    #subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
+    subjlist = ['sub-001', 'sub-002', 'sub-003']
+    
+    rois_to_use = ['ba-17-18_{:s}_contr-objscrvsbas', 'LO_{:s}_contr-objvscr']
+    
+    roilist = []
+     
+    voxelnos_evc = np.arange(100, 3100, 100)
+    voxelnos_loc = np.arange(100, 3100, 100)
+    voxelnos_ppa = np.arange(100, 500, 100)
+    voxelnos_1937 = np.arange(100, 3100, 100)
+    voxelnos_17 = np.arange(100, 2100, 100)
+    voxelnos_18 = np.arange(100, 2100, 100)
+    voxelnos_19 = np.arange(100, 2100, 100)
+    
+    for r in rois_to_use:
+        if 'LO' in r:
+            voxelnos = voxelnos_loc
+        elif 'PPA' in r:
+            voxelnos = voxelnos_ppa
+        elif '17-18' in r:
+            voxelnos = voxelnos_evc
+        elif '17' in r:
+            voxelnos = voxelnos_17
+        elif '18' in r:
+            voxelnos = voxelnos_18
+        elif '19-37' in r:
+            voxelnos = voxelnos_1937
+        elif '19' in r:
+            voxelnos = voxelnos_19
+        for vn in voxelnos:
+            if '_{:s}' in r:
+                for s in ['L', 'R']:
+                    #pass
+                    roilist.append(r.format(s) + '_top-{:g}'.format(vn))
+            else:
+                roilist.append(r + '_top-{:g}'.format(vn))
+                
+    allsignif_rois = []
+    
+    for r in allsignif_rois:
+        if '_{:s}' in r:
+            for s in ['L', 'R']:
+                roilist.append(r.format(s) + '_allsignif')
+        else:
+            roilist.append(r + '_allsignif')
+
+    roilist = []
+
+    full_rois = ['ba-17-18_{:s}']#, 'ba-19-37_{:s}', 'LO_{:s}']
+    
+    for r in full_rois:
+        if '{:s}' in r:
+            for s in ['L', 'R']:
+                roilist.append(r.format(s))
+        else:
+            roilist.append(r)
+    
+    print('------------------- ROI list: -------------------')
+    print(roilist)
+    print('-------------------------------------------------')
+    
+    # Identity interface
+    idint = Node(IdentityInterface(fields=['sub', 'roi']), name='idint')
+    idint.iterables = [('sub', subjlist), ('roi', roilist)]
+    
+    # Main decoding node
+    decodingnode = Node(Function(input_names=['sub', 'roi', 'approach', 'task', 'model', 'dataformat'],
+                              output_names=['res'],
+                              function=decoding_approaches),
+                     name='decodingnode', overwrite=True)
+    
+    decodingnode.iterables = [('dataformat', ['betas']),
+                              ('approach', ['CV']),
+                              ('task', ['train']),
+                              ('model', [3])]
+    decodingnode.synchronize = True
+    
+    # Gather results
+    partialjoinnode = JoinNode(Function(input_names=['this_reslist'], output_names=['this_reslist'],
+                                    function=partial_join), joinsource='decodingnode',
+                                    joinfield='this_reslist', name='partialjoinnode')
+    
+    # Save data
+    savingnode = JoinNode(Function(input_names=['res_list', 'out_file'],
+                               output_names=[],
+                               function=save_allres),
+                      joinsource='idint',
+                      joinfield='res_list',
+                      name='savingnode', overwrite=True)
+    
+    # --------------------------------------
+    savingnode.inputs.out_file = 'trynewapproach_CV.csv'
+    print('Output file:', savingnode.inputs.out_file)
+    # --------------------------------------
+    
+    # Create workflow
+    MVPA_wf = Workflow(name='MVPA_wf')
+    MVPA_wf.base_dir = project_dir
+    MVPA_wf.connect([(idint, decodingnode, [('sub', 'sub'), ('roi', 'roi')]),
+                     (decodingnode, partialjoinnode, [('res', 'this_reslist')]),
+                     (partialjoinnode, savingnode, [('this_reslist', 'res_list')])])
+    
+    # Workflow settings
+    templatecmd = '#!/bin/sh\necho `date "+%Y%m%d-%H%M%S"`\nmodule load anaconda3/5.0.0\nsource activate giacomo\n'
+
+    MVPA_wf.config['execution']['poll_sleep_duration'] = 1
+    MVPA_wf.config['execution']['job_finished_timeout'] = 120
+    MVPA_wf.config['execution']['remove_unnecessary_outputs'] = True
+    MVPA_wf.config['execution']['stop_on_first_crash'] = True
+
+    MVPA_wf.config['logging'] = {
+            'log_directory': MVPA_wf.base_dir+'/'+MVPA_wf.name,
+            'log_to_file': False}
+    
+    # Run workflow
+    #MVPA_wf.run()
+    MVPA_wf.run('PBS', plugin_args={'max_jobs' : 300, 'qsub_args': '-l walltime=36:00:00,mem=16g', 
+                                   'max_tries':3,'retry_timeout': 5, 'max_jobname_len': 15})
+
+# ---------------------------------------------------------------------------------
+    
+if __name__=="__main__":
+    
+    main()
+    # res = decoding_approaches('sub-001', 'ba-17-18_L_contr-objscrvsbas_top-500', 
+    #                           'traintest', ('train', 'test'), (3, 3), 
+    #                           'betas')
+    # res_list = [[np.nan], [np.nan]]
+    # save_allres(res_list, 'dummy.csv')
+     

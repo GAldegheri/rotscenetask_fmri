@@ -1,0 +1,201 @@
+Job Id: 49110304.dccn-l029.dccn.nl
+    Job_Name = b0.a0.aI.decodi
+    Job_Owner = giaald@mentat003.dccn.nl
+    resources_used.cput = 00:00:18
+    resources_used.vmem = 1117844kb
+    resources_used.walltime = 00:00:27
+    resources_used.mem = 169172kb
+    resources_used.energy_used = 0
+    job_state = C
+    queue = batch
+    server = dccn-l029.dccn.nl
+    Checkpoint = u
+    ctime = Wed May 17 15:50:05 2023
+    Error_Path = mentat003.dccn.nl:/project/3018040.05/MVPA_wf/batch/b0.a0.aI.
+	decodi.e49110304
+    exec_host = dccn-c051.dccn.nl/26
+    Hold_Types = n
+    Join_Path = n
+    Keep_Files = n
+    Mail_Points = a
+    mtime = Wed May 17 15:50:55 2023
+    Output_Path = mentat003.dccn.nl:/project/3018040.05/MVPA_wf/batch/b0.a0.aI
+	.decodi.o49110304
+    Priority = 0
+    qtime = Wed May 17 15:50:05 2023
+    Rerunable = True
+    Resource_List.walltime = 36:00:00
+    Resource_List.mem = 16gb
+    session_id = 26326
+    Shell_Path_List = /opt/cluster/bin/trqbash
+    Variable_List = PBS_O_QUEUE=automatic,PBS_O_HOME=/home/predatt/giaald,
+	PBS_O_LOGNAME=giaald,
+	PBS_O_PATH=/home/predatt/giaald/.conda/envs/giacomo37/bin:/opt/anacon
+	da3/2021.05/bin:/opt/anaconda3/2021.05/condabin:/home/predatt/giaald/.
+	vscode-cli/servers/Stable-b3e4e68a0bc097f0ae7907b217c1119af9e03435/ser
+	ver/bin/remote-cli:/usr/lib64/qt-3.3/bin:/opt/fsl/6.0.5/bin:/opt/frees
+	urfer/7.3.2/bin:/opt/freesurfer/7.3.2/fsfast/bin:/opt/freesurfer/7.3.2
+	/tktools:/opt/freesurfer/7.3.2/mni/bin:/opt/R/4.1.0/bin:/opt/gcc/7.2.0
+	/bin:/opt/cluster/external/moab/bin:/opt/cluster/external/pigz/bin:/op
+	t/cluster/external/lzip/bin:/opt/cluster/external/p7zip-16.02/bin:/opt
+	/cluster/external/magma:/opt/cluster/external/ldsc/ldsc:/opt/cluster/e
+	xternal/gcta:/opt/cluster/external/plink:/opt/cluster/external/keepass
+	x/latest/bin:/opt/cluster/external/project_acl:/opt/cluster/external/u
+	tilities/bin64:/opt/cluster/bin:/opt/cluster/sbin:/usr/local/bin:/usr/
+	bin:/usr/local/sbin:/usr/sbin:/usr/bin:/usr/sbin:/usr/bin:/usr/sbin:/u
+	sr/bin:/usr/sbin:/usr/bin:/usr/sbin,PBS_O_MAIL=/var/spool/mail/giaald,
+	PBS_O_SHELL=/bin/bash,PBS_O_LANG=en_US.UTF-8,
+	PBS_O_SUBMIT_FILTER=/opt/cluster/sbin/qsub_filter,
+	CUDA_DEVICE_ORDER=PCI_BUS_ID,GCC_HOME=/opt/gcc/7.2.0,
+	MANPATH=/opt/R/4.1.0/share/man:/opt/gcc/7.2.0/share/man:/opt/cluster/
+	external/moab/share/man:/opt/cluster/external/pigz/man:/opt/cluster/ex
+	ternal/lzip/share/man:/opt/cluster/external/p7zip-16.02/man:/opt/clust
+	er/man:/usr/share/man:/usr/local/share/man:/opt/cluster/external/utili
+	ties/man,HOSTNAME=mentat003.dccn.nl,TERM_PROGRAM=vscode,FS_OVERRIDE=0,
+	SSL_CERT_FILE=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem,
+	MATLAB_BIN=/opt/matlab/R2022b/bin/matlab,SHELL=/bin/bash,
+	TERM=screen-256color,HISTSIZE=1000,SSH_CLIENT=131.174.44.15 37216 22,
+	MATLABDIR=/opt/matlab/R2022b,CONDA_SHLVL=1,FSLMULTIFILEQUIT=TRUE,
+	PERL5LIB=/opt/freesurfer/7.3.2/mni/share/perl5,
+	CONDA_PROMPT_MODIFIER=(base),TERM_PROGRAM_VERSION=1.78.2,
+	CLUSTER_UTIL_ROOT=/opt/cluster,QTDIR=/usr/lib64/qt-3.3,
+	QTINC=/usr/lib64/qt-3.3/include,OS=Linux,SSH_TTY=/dev/pts/9,
+	DCCN_32_DIR=/opt/32bit,QT_GRAPHICSSYSTEM_CHECKED=1,
+	LOCAL_DIR=/opt/freesurfer/7.3.2/local,USER=giaald,
+	LD_LIBRARY_PATH=/opt/R/4.1.0/lib64/R/lib:/opt/gcc/7.2.0/lib64:/opt/cl
+	uster/lib:/opt/cluster/external/p7zip-16.02/lib/p7zip,
+	LS_COLORS=rs=0:di=38;5;27:ln=38;5;51:mh=44;38;5;15:pi=40;38;5;11:so=3
+	8;5;13:do=38;5;5:bd=48;5;232;38;5;11:cd=48;5;232;38;5;3:or=48;5;232;38
+	;5;9:mi=05;48;5;232;38;5;15:su=48;5;196;38;5;15:sg=48;5;11;38;5;16:ca=
+	48;5;196;38;5;226:tw=48;5;10;38;5;16:ow=48;5;10;38;5;21:st=48;5;21;38;
+	5;15:ex=38;5;34:*.tar=38;5;9:*.tgz=38;5;9:*.arc=38;5;9:*.arj=38;5;9:*.
+	taz=38;5;9:*.lha=38;5;9:*.lz4=38;5;9:*.lzh=38;5;9:*.lzma=38;5;9:*.tlz=
+	38;5;9:*.txz=38;5;9:*.tzo=38;5;9:*.t7z=38;5;9:*.zip=38;5;9:*.z=38;5;9:
+	*.Z=38;5;9:*.dz=38;5;9:*.gz=38;5;9:*.lrz=38;5;9:*.lz=38;5;9:*.lzo=38;5
+	;9:*.xz=38;5;9:*.bz2=38;5;9:*.bz=38;5;9:*.tbz=38;5;9:*.tbz2=38;5;9:*.t
+	z=38;5;9:*.deb=38;5;9:*.rpm=38;5;9:*.jar=38;5;9:*.war=38;5;9:*.ear=38;
+	5;9:*.sar=38;5;9:*.rar=38;5;9:*.alz=38;5;9:*.ace=38;5;9:*.zoo=38;5;9:*
+	.cpio=38;5;9:*.7z=38;5;9:*.rz=38;5;9:*.cab=38;5;9:*.jpg=38;5;13:*.jpeg
+	=38;5;13:*.gif=38;5;13:*.bmp=38;5;13:*.pbm=38;5;13:*.pgm=38;5;13:*.ppm
+	=38;5;13:*.tga=38;5;13:*.xbm=38;5;13:*.xpm=38;5;13:*.tif=38;5;13:*.tif
+	f=38;5;13:*.png=38;5;13:*.svg=38;5;13:*.svgz=38;5;13:*.mng=38;5;13:*.p
+	cx=38;5;13:*.mov=38;5;13:*.mpg=38;5;13:*.mpeg=38;5;13:*.m2v=38;5;13:*.
+	mkv=38;5;13:*.webm=38;5;13:*.ogm=38;5;13:*.mp4=38;5;13:*.m4v=38;5;13:*
+	.mp4v=38;5;13:*.vob=38;5;13:*.qt=38;5;13:*.nuv=38;5;13:*.wmv=38;5;13:*
+	.asf=38;5;13:*.rm=38;5;13:*.rmvb=38;5;13:*.flc=38;5;13:*.avi=38;5;13:*
+	.fli=38;5;13:*.flv=38;5;13:*.gl=38;5;13:*.dl=38;5;13:*.xcf=38;5;13:*.x
+	wd=38;5;13:*.yuv=38;5;13:*.cgm=38;5;13:*.emf=38;5;13:*.axv=38;5;13:*.a
+	nx=38;5;13:*.ogv=38;5;13:*.ogx=38;5;13:*.aac=38;5;45:*.au=38;5;45:*.fl
+	ac=38;5;45:*.mid=38;5;45:*.midi=38;5;45:*.mka=38;5;45:*.mp3=38;5;45:*.
+	mpc=38;5;45:*.ogg=38;5;45:*.ra=38;5;45:*.wav=38;5;45:*.axa=38;5;45:*.o
+	ga=38;5;45:*.spx=38;5;45:*.xspf=38;5;45:,
+	FREESURFER=/opt/freesurfer/7.3.2,
+	FSFAST_HOME=/opt/freesurfer/7.3.2/fsfast,FSLGECUDAQ=cuda.q,
+	CONDA_EXE=/opt/anaconda3/2021.05/bin/conda,
+	MNI_PERL5LIB=/opt/freesurfer/7.3.2/mni/share/perl5,
+	FMRI_ANALYSIS_DIR=/opt/freesurfer/7.3.2/fsfast,
+	FSF_OUTPUT_FORMAT=nii.gz,MINC_BIN_DIR=/opt/freesurfer/7.3.2/mni/bin,
+	TMUX=/tmp/tmux-11312/default\,18694\,0,
+	SUBJECTS_DIR=/opt/freesurfer/7.3.2/subjects,_CE_CONDA=,
+	MAIL=/var/spool/mail/giaald,
+	PATH=/home/predatt/giaald/.conda/envs/giacomo37/bin:/opt/anaconda3/20
+	21.05/bin:/opt/anaconda3/2021.05/condabin:/home/predatt/giaald/.vscode
+	-cli/servers/Stable-b3e4e68a0bc097f0ae7907b217c1119af9e03435/server/bi
+	n/remote-cli:/usr/lib64/qt-3.3/bin:/opt/fsl/6.0.5/bin:/opt/freesurfer/
+	7.3.2/bin:/opt/freesurfer/7.3.2/fsfast/bin:/opt/freesurfer/7.3.2/tktoo
+	ls:/opt/freesurfer/7.3.2/mni/bin:/opt/R/4.1.0/bin:/opt/gcc/7.2.0/bin:/
+	opt/cluster/external/moab/bin:/opt/cluster/external/pigz/bin:/opt/clus
+	ter/external/lzip/bin:/opt/cluster/external/p7zip-16.02/bin:/opt/clust
+	er/external/magma:/opt/cluster/external/ldsc/ldsc:/opt/cluster/externa
+	l/gcta:/opt/cluster/external/plink:/opt/cluster/external/keepassx/late
+	st/bin:/opt/cluster/external/project_acl:/opt/cluster/external/utiliti
+	es/bin64:/opt/cluster/bin:/opt/cluster/sbin:/usr/local/bin:/usr/bin:/u
+	sr/local/sbin:/usr/sbin:/usr/bin:/usr/sbin:/usr/bin:/usr/sbin:/usr/bin
+	:/usr/sbin:/usr/bin:/usr/sbin,
+	CONDA_PATH_BACKUP=/opt/anaconda3/2021.05/bin:/opt/anaconda3/2021.05/c
+	ondabin:/home/predatt/giaald/.vscode-cli/servers/Stable-b3e4e68a0bc097
+	f0ae7907b217c1119af9e03435/server/bin/remote-cli:/usr/lib64/qt-3.3/bin
+	:/opt/fsl/6.0.5/bin:/opt/freesurfer/7.3.2/bin:/opt/freesurfer/7.3.2/fs
+	fast/bin:/opt/freesurfer/7.3.2/tktools:/opt/freesurfer/7.3.2/mni/bin:/
+	opt/R/4.1.0/bin:/opt/gcc/7.2.0/bin:/opt/cluster/external/moab/bin:/opt
+	/cluster/external/pigz/bin:/opt/cluster/external/lzip/bin:/opt/cluster
+	/external/p7zip-16.02/bin:/opt/cluster/external/magma:/opt/cluster/ext
+	ernal/ldsc/ldsc:/opt/cluster/external/gcta:/opt/cluster/external/plink
+	:/opt/cluster/external/keepassx/latest/bin:/opt/cluster/external/proje
+	ct_acl:/opt/cluster/external/utilities/bin64:/opt/cluster/bin:/opt/clu
+	ster/sbin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/
+	usr/sbin:/usr/bin:/usr/sbin:/usr/bin:/usr/sbin:/usr/bin:/usr/sbin,
+	CONDA_PREFIX=/home/predatt/giaald/.conda/envs/giacomo37,
+	PWD=/project/3018040.05/rotscenetask_fmri/analysis/mvpa,
+	FUNCTIONALS_DIR=/opt/freesurfer/7.3.2/sessions,
+	_LMFILES_=/opt/_modules/cluster/1.0:/opt/_modules/gcc/7.2.0:/opt/_mod
+	ules/R/4.1.0:/opt/_modules/freesurfer/7.3.2:/opt/_modules/fsl/6.0.5:/o
+	pt/_modules/matlab/R2022b,LANG=en_US.UTF-8,
+	FSLTCLSH=/opt/fsl/6.0.5/bin/fsltclsh,
+	MOABHOMEDIR=/opt/cluster/external/moab,MODULEPATH=/opt/_modules,
+	FSLMACHINELIST=,KDEDIRS=/usr,
+	LOADEDMODULES=cluster/1.0:gcc/7.2.0:R/4.1.0:freesurfer/7.3.2:fsl/6.0.
+	5:matlab/R2022b,MINC_LIB_DIR=/opt/freesurfer/7.3.2/mni/lib,
+	TMUX_PANE=%0,VSCODE_GIT_ASKPASS_EXTRA_ARGS=,FSLREMOTECALL=,
+	FSLWISH=/opt/fsl/6.0.5/bin/fslwish,HISTCONTROL=ignoredups,
+	KRB5CCNAME=KEYRING:persistent:11312,
+	SSH_ASKPASS=/usr/libexec/openssh/gnome-ssh-askpass,
+	SSL_CERT_DIR=/etc/pki/tls/certs,_CE_M=,HOME=/home/predatt/giaald,
+	SHLVL=6,MNI_DIR=/opt/freesurfer/7.3.2/mni,
+	VSCODE_GIT_ASKPASS_MAIN=/home/predatt/giaald/.vscode-cli/servers/Stab
+	le-b3e4e68a0bc097f0ae7907b217c1119af9e03435/server/extensions/git/dist
+	/askpass-main.js,FREESURFER_HOME=/opt/freesurfer/7.3.2,
+	CONDA_PS1_BACKUP=\\[]633;A\\](base) \\u@\\[\\e[31m\\]\\h\\[\\e[0m\\
+	]:\\w\\n\\[\\e[`exitstatus=$?;if [ ${exitstatus} != 0 ]; then echo 31m
+	; else echo 32m; fi`\\]\\!\\[\\e[0m\\] \\$ \\[]633;B\\],
+	CONDA_PYTHON_EXE=/opt/anaconda3/2021.05/bin/python,LOGNAME=giaald,
+	CVS_RSH=ssh,FSLDIR=/opt/fsl/6.0.5,QTLIB=/usr/lib64/qt-3.3/lib,
+	DCCN_MOD_DIR=/opt/_modules,
+	SSH_CONNECTION=131.174.44.15 37216 131.174.44.150 22,
+	VSCODE_GIT_IPC_HANDLE=/run/user/11312/vscode-git-889a2c8162.sock,
+	FIX_VERTEX_AREA=,MODULESHOME=/usr/share/Modules,
+	VSCODE_IPC_HOOK_CLI=/run/user/11312/vscode-ipc-3e9bfb9a-0bd5-4d14-aa3
+	3-eb594cfc5d0e.sock,LESSOPEN=||/usr/bin/lesspipe.sh %s,
+	CONDA_DEFAULT_ENV=giacomo37,
+	BROWSER=/home/predatt/giaald/.vscode-cli/servers/Stable-b3e4e68a0bc09
+	7f0ae7907b217c1119af9e03435/server/bin/helpers/browser.sh,
+	R_HOME=/opt/R/4.1.0/lib64/R,
+	GIT_ASKPASS=/home/predatt/giaald/.vscode-cli/servers/Stable-b3e4e68a0
+	bc097f0ae7907b217c1119af9e03435/server/extensions/git/dist/askpass.sh,
+	VSCODE_GIT_ASKPASS_NODE=/home/predatt/giaald/.vscode-cli/servers/Stab
+	le-b3e4e68a0bc097f0ae7907b217c1119af9e03435/server/node,FSLLOCKDIR=,
+	QT_PLUGIN_PATH=/usr/lib64/kde4/plugins:/usr/lib/kde4/plugins,
+	TORQUEHOME=/var/spool/torque,FSLOUTPUTTYPE=NIFTI_GZ,
+	MNI_DATAPATH=/opt/freesurfer/7.3.2/mni/data,DCCN_OPT_DIR=/opt,
+	COLORTERM=truecolor,
+	PBS_O_WORKDIR=/project/3018040.05/rotscenetask_fmri/analysis/mvpa,
+	PBS_O_HOST=mentat003.dccn.nl,PBS_O_SERVER=torque.dccn.nl
+    euser = giaald
+    egroup = predatt
+    queue_type = E
+    etime = Wed May 17 15:50:05 2023
+    exit_status = 0
+    submit_args = -l walltime=36:00:00,
+	mem=16g -o /project/3018040.05/MVPA_wf/batch -e /project/3018040.05/M
+	VPA_wf/batch -N b0.a0.aI.decodi
+    start_time = Wed May 17 15:50:24 2023
+    start_count = 1
+    fault_tolerant = False
+    comp_time = Wed May 17 15:50:55 2023
+    job_radix = 0
+    total_runtime = 31.312310
+    submit_host = mentat003.dccn.nl
+    init_work_dir = /project/3018040.05/rotscenetask_fmri/analysis/mvpa
+    request_version = 1
+    req_information.task_count.0 = 1
+    req_information.lprocs.0 = 1
+    req_information.total_memory.0 = 16777216kb
+    req_information.memory.0 = 16777216kb
+    req_information.thread_usage_policy.0 = allowthreads
+    req_information.hostlist.0 = dccn-c051.dccn.nl:ppn=1
+    req_information.task_usage.0.task.0.cpu_list = 25
+    req_information.task_usage.0.task.0.mem_list = 1
+    req_information.task_usage.0.task.0.cores = 0
+    req_information.task_usage.0.task.0.threads = 1
+    req_information.task_usage.0.task.0.host = dccn-c051.dccn.nl
+
