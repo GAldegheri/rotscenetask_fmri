@@ -310,7 +310,7 @@ def main():
     
     # Run workflow
     #MVPA_wf.run()
-    MVPA_wf.run('PBS', plugin_args={'max_jobs' : 300, 'qsub_args': '-l walltime=36:00:00,mem=16g', 
+    MVPA_wf.run('PBS', plugin_args={'max_jobs' : 300, 'qsub_args': '-l walltime=02:00:00,mem=16g', 
                                    'max_tries':3,'retry_timeout': 5, 'max_jobname_len': 15})
 
 # ---------------------------------------------------------------------------------
