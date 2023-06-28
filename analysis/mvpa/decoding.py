@@ -341,45 +341,6 @@ def decode_CV(DS, opt):
     
 # -------------------------------------------------------------------------------------------------
 
-# def decode_CV_trialbetas(DS):
-    
-#     # Only model 2 for now (all initial and final viewpoints, exp/unexp)
-#     DS_exp = dataset.vstack([i for i in DS if 'unexp' not in i.sa.targets[0]], a=0)
-#     DS_unexp = dataset.vstack([i for i in DS if 'unexp' in i.sa.targets[0]], a=0)
-    
-#     # Randomly divide in thirds
-#     DS_exp_thirds = []
-#     for ch in np.unique(DS_exp.chunks):
-#         thisA30 = DS_exp[(DS_exp.chunks==ch) & (np.core.defchararray.find(DS_exp.targets,'A30')!=-1)]
-#         thisA90 = DS_exp[(DS_exp.chunks==ch) & (np.core.defchararray.find(DS_exp.targets,'A90')!=-1)]
-#         thisB30 = DS_exp[(DS_exp.chunks==ch) & (np.core.defchararray.find(DS_exp.targets,'B30')!=-1)]
-#         thisB90 = DS_exp[(DS_exp.chunks==ch) & (np.core.defchararray.find(DS_exp.targets,'B90')!=-1)]
-#         thischunk_new = dataset.vstack([thisA30, thisA90, thisB30, thisB90], a=0)
-#         randthird = []
-#         for i in range(int(len(DS_exp[(DS_exp.chunks==ch)])/3)):
-#             randthird.extend(random.sample([1, 2, 3], 3))
-#         thischunk_new.sa['trialsplit'] = np.array(randthird)
-#         DS_exp_thirds.append(thischunk_new)
-#     DS_exp_thirds = dataset.vstack(DS_exp_thirds, a=0)     
-        
-#     res_exp_A = 0
-#     res_exp_B = 0
-#     for n in range(1, 4):
-#         thisthird_A = DS_exp_thirds[(DS_exp_thirds.sa.trialsplit==n)&(np.core.defchararray.find(DS_exp_thirds.targets,'A')!=-1)]
-#         thisthird_B = DS_exp_thirds[(DS_exp_thirds.sa.trialsplit==n)&(np.core.defchararray.find(DS_exp_thirds.targets,'B')!=-1)]
-#         res_exp_A += CV_leaveoneout(thisthird_A, zscore_data=True)
-#         res_exp_B += CV_leaveoneout(thisthird_B, zscore_data=True)
-#     res_exp_A /= 3
-#     res_exp_B /= 3
-    
-#     res_unexp_A = CV_leaveoneout(DS_unexp[np.core.defchararray.find(DS_unexp.targets,'A')!=-1], zscore_data=True)
-#     res_unexp_B = CV_leaveoneout(DS_unexp[np.core.defchararray.find(DS_unexp.targets,'B')!=-1], zscore_data=True)
-    
-#     return (np.mean([res_exp_A, res_exp_B]), np.mean([res_unexp_A, res_unexp_B]))
-    
-
-# -------------------------------------------------------------------------------------------------
-
 def decode_SplitHalf(DS, opt):
     
     task = opt.task

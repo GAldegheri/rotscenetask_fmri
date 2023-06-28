@@ -193,8 +193,8 @@ def main():
      
     # Subject and ROI list
     
-    #subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
-    subjlist = ['sub-001', 'sub-002', 'sub-003']
+    subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
+    #subjlist = ['sub-001', 'sub-002', 'sub-003']
     
     rois_to_use = ['ba-17-18_{:s}_contr-objscrvsbas', 'LO_{:s}_contr-objvscr']
     
