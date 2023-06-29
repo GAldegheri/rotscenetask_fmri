@@ -1,1 +1,1 @@
-rm crash-*.pklz
+rm crash-*.pklz std*.nipype

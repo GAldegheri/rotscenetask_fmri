@@ -12,13 +12,28 @@ def merge_results(res_list):
     all_results = pd.concat(all_results)
     return all_results
 
-def get_subj_avg(results):
+def get_subj_avg(results, avg_decodedirs=False):
     results = results.drop(['chunk'], axis=1)
     ind_vars = ['subject', 'roi', 'approach', 
                 'traindataformat', 'testdataformat', 'traintask',
                 'testtask', 'trainmodel', 'testmodel', 
                 'hemi', 'contrast', 'nvoxels']
     ind_vars = [i for i in ind_vars if i in results.columns]
+    
+    if avg_decodedirs:
+        # remove traintask, trainmodel, testtask, testmodel...
+        ind_vars = [i for i in ind_vars if 'train' not in i and 'test' not in i]
+        groupedres = []
+        taskmodelpairs = list(results[['traintask', 'trainmodel']].drop_duplicates().itertuples(index=False, name=None))
+        for t, m in taskmodelpairs:
+            thistm = results[((results['traintask']==t)&(results['trainmodel']==m))|\
+                ((results['testtask']==t)&(results['testmodel']==m))]
+            thistm = thistm.groupby(ind_vars).mean().reset_index()
+            groupedres.append(thistm)
+    else:
+        results = results.groupby(ind_vars).mean().reset_index()
+    
+    return results    
 
 def parse_roi_info(results):
     """

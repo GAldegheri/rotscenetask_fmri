@@ -37,6 +37,10 @@ def load_betas(opt, mask_templ=None, bids_dir=cfg.bids_dir, use_fir=False):
         if not f in exclude:
             chunk_count[f] = 1
     
+    if mask_templ is None:
+        mask_templ = os.path.join(cfg.project_dir, 'anat_roi_masks', 
+                                  'wholebrain.nii')
+    
     if '{:s}' in mask_templ:
         mask = mask_templ.format(opt.sub, opt.sub)
     else:
@@ -77,6 +81,10 @@ def load_TRs(opt, TR_delay=None, mask_templ=None, bids_dir=cfg.bids_dir):
     
     exclude = ['buttonpress']
     
+    if mask_templ is None:
+        mask_templ = os.path.join(cfg.project_dir, 'anat_roi_masks', 
+                                  'wholebrain.nii')
+    
     if '{:s}' in mask_templ:
         mask = mask_templ.format(opt.sub, opt.sub)
     else:
@@ -98,8 +106,8 @@ def load_TRs(opt, TR_delay=None, mask_templ=None, bids_dir=cfg.bids_dir):
             elif opt.task == 'train':
                 events = specify_model_train(evfile, datamodel)
             elif opt.task=='test':
-                behav = pd.read_csv(os.path.join(bids_dir, 
-                                                 f'{opt.sub}/func/{opt.sub}_task-{opt.task}'), 
+                behav = pd.read_csv(os.path.join(bids_dir, opt.sub, 'func',
+                                                 f'{opt.sub}_task-{opt.task}_beh.tsv'), 
                                     sep='\t')
                 events = specify_model_test(evfile, datamodel, behav)
             
@@ -148,6 +156,10 @@ def load_trialbetas(opt, mask_templ=None, bids_dir=cfg.bids_dir, event=None):
         
     if event is not None: # To only load custom event
         alltrials = [t for t in alltrials if 'ev-{:g}'.format(event) in t]
+        
+    if mask_templ is None:
+        mask_templ = os.path.join(cfg.project_dir, 'anat_roi_masks', 
+                                  'wholebrain.nii')
     
     if '{:s}' in mask_templ:
         mask = mask_templ.format(opt.sub, opt.sub)

@@ -29,6 +29,7 @@ def decoding_approaches(sub, roi, approach, task, model, dataformat):
     from utils import Options, split_options
     from configs import project_dir, bids_dir
     import os
+    import pdb
     
     opt = Options(
         sub=sub,
@@ -115,6 +116,13 @@ def decoding_approaches(sub, roi, approach, task, model, dataformat):
             try:
                 testDS = loadfun(test_opt, mask_templ=mask_templ)
             except:
+                print('*******************')
+                print('*******************')
+                print('Subject:', sub, ' - ROI ', roi, 
+                      ' - trainmodel ', trainmodel,
+                      ' - testmodel ', testmodel)
+                print('*******************')
+                print('*******************')
                 testDS = loadfun_test(test_opt, mask_templ=mask_templ)
             
             testDS = correct_labels(testDS, test_opt)
@@ -194,7 +202,7 @@ def main():
     # Subject and ROI list
     
     subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
-    #subjlist = ['sub-001', 'sub-002', 'sub-003']
+    #subjlist = ['sub-001']
     
     rois_to_use = ['ba-17-18_{:s}_contr-objscrvsbas', 'LO_{:s}_contr-objvscr']
     
@@ -240,9 +248,9 @@ def main():
         else:
             roilist.append(r + '_allsignif')
 
-    roilist = []
+    #roilist = []
 
-    full_rois = ['ba-17-18_{:s}']#, 'ba-19-37_{:s}', 'LO_{:s}']
+    full_rois = ['ba-17-18_{:s}', 'LO_{:s}']
     
     for r in full_rois:
         if '{:s}' in r:
@@ -265,10 +273,14 @@ def main():
                               function=decoding_approaches),
                      name='decodingnode', overwrite=True)
     
-    decodingnode.iterables = [('dataformat', ['betas']),
-                              ('approach', ['CV']),
-                              ('task', ['train']),
-                              ('model', [3])]
+    decodingnode.iterables = [('dataformat', ['betas', 'betas',
+                                              'betas', 'betas']),
+                              ('approach', ['traintest', 'traintest',
+                                            'traintest', 'traintest']),
+                              ('task', [('train', 'test'), ('test', 'train'),
+                                        ('train', 'test'), ('test', 'train')]),
+                              ('model', [(5, 15), (15, 5),
+                                         (5, 17), (17, 5)])]
     decodingnode.synchronize = True
     
     # Gather results
@@ -285,7 +297,7 @@ def main():
                       name='savingnode', overwrite=True)
     
     # --------------------------------------
-    savingnode.inputs.out_file = 'trynewapproach_CV.csv'
+    savingnode.inputs.out_file = 'mainanalysis.csv'
     print('Output file:', savingnode.inputs.out_file)
     # --------------------------------------
     
@@ -318,9 +330,4 @@ def main():
 if __name__=="__main__":
     
     main()
-    # res = decoding_approaches('sub-001', 'ba-17-18_L_contr-objscrvsbas_top-500', 
-    #                           'traintest', ('train', 'test'), (3, 3), 
-    #                           'betas')
-    # res_list = [[np.nan], [np.nan]]
-    # save_allres(res_list, 'dummy.csv')
      
