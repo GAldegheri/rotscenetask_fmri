@@ -29,6 +29,10 @@ def get_subj_avg(results, avg_decodedirs=False):
             thistm = results[((results['traintask']==t)&(results['trainmodel']==m))|\
                 ((results['testtask']==t)&(results['testmodel']==m))]
             thistm = thistm.groupby(ind_vars).mean().reset_index()
+            thistm['traintask'] = taskmodelpairs[0][0]+'_'+taskmodelpairs[1][0]
+            thistm['testtask'] = taskmodelpairs[0][0]+'_'+taskmodelpairs[1][0]
+            thistm['trainmodel'] = taskmodelpairs[0][1]+'_'+taskmodelpairs[1][1]
+            thistm['testmodel'] = taskmodelpairs[0][1]+'_'+taskmodelpairs[1][1]
             groupedres.append(thistm)
     else:
         results = results.groupby(ind_vars).mean().reset_index()
