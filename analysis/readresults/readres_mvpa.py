@@ -17,7 +17,7 @@ def get_subj_avg(results, avg_decodedirs=False):
     ind_vars = ['subject', 'roi', 'approach', 
                 'traindataformat', 'testdataformat', 'traintask',
                 'testtask', 'trainmodel', 'testmodel', 
-                'hemi', 'contrast', 'nvoxels']
+                'hemi', 'contrast', 'nvoxels', 'expected']
     ind_vars = [i for i in ind_vars if i in results.columns]
     
     if avg_decodedirs:
@@ -30,7 +30,7 @@ def get_subj_avg(results, avg_decodedirs=False):
                 ((results['testtask']==t)&(results['testmodel']==m))]
             thesemodels = list(thistm.trainmodel.unique())
             thesetasks = list(thistm.traintask.unique())
-            thistm = thistm.groupby(ind_vars).mean().reset_index()
+            thistm = thistm.groupby(ind_vars, dropna=False).mean().reset_index()
             thistm['traintask'] = thesetasks[0]+'_'+thesetasks[1]
             thistm['testtask'] = thesetasks[0]+'_'+thesetasks[1]
             thistm['trainmodel'] = str(thesemodels[0])+'_'+str(thesemodels[1])
@@ -38,7 +38,7 @@ def get_subj_avg(results, avg_decodedirs=False):
             groupedres.append(thistm)
         results = pd.concat(groupedres)
     else:
-        results = results.groupby(ind_vars).mean().reset_index()
+        results = results.groupby(ind_vars, dropna=False).mean().reset_index()
     
     if 'view' in results.columns:
         results = results.drop(['view'], axis=1)

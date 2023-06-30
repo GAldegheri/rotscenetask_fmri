@@ -9,7 +9,7 @@ sys.path.append('..')
 from mvpa.classify_models import isExpUnexp
 from utils import Options
 from mne.stats import permutation_cluster_1samp_test
-import PtitPrince as pt
+import plotting.PtitPrince as pt
 
 
 def plot_by_nvoxels(data, measure='distance', tfce_pvals=None):
