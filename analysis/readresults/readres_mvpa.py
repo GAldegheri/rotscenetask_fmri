@@ -28,14 +28,20 @@ def get_subj_avg(results, avg_decodedirs=False):
         for t, m in taskmodelpairs:
             thistm = results[((results['traintask']==t)&(results['trainmodel']==m))|\
                 ((results['testtask']==t)&(results['testmodel']==m))]
+            thesemodels = list(thistm.trainmodel.unique())
+            thesetasks = list(thistm.traintask.unique())
             thistm = thistm.groupby(ind_vars).mean().reset_index()
-            thistm['traintask'] = taskmodelpairs[0][0]+'_'+taskmodelpairs[1][0]
-            thistm['testtask'] = taskmodelpairs[0][0]+'_'+taskmodelpairs[1][0]
-            thistm['trainmodel'] = taskmodelpairs[0][1]+'_'+taskmodelpairs[1][1]
-            thistm['testmodel'] = taskmodelpairs[0][1]+'_'+taskmodelpairs[1][1]
+            thistm['traintask'] = thesetasks[0]+'_'+thesetasks[1]
+            thistm['testtask'] = thesetasks[0]+'_'+thesetasks[1]
+            thistm['trainmodel'] = str(thesemodels[0])+'_'+str(thesemodels[1])
+            thistm['testmodel'] = str(thesemodels[0])+'_'+str(thesemodels[1])
             groupedres.append(thistm)
+        results = pd.concat(groupedres)
     else:
         results = results.groupby(ind_vars).mean().reset_index()
+    
+    if 'view' in results.columns:
+        results = results.drop(['view'], axis=1)
     
     return results    
 
@@ -88,5 +94,7 @@ def parse_roi_info(results):
     
     return results
             
-            
+if __name__=="__main__":
+    results = merge_results(['/project/3018040.05/MVPA_results/mainanalysis.csv'])
+    avgres = get_subj_avg(results, avg_decodedirs=True)
     
