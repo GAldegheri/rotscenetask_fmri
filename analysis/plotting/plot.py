@@ -10,6 +10,7 @@ from mvpa.classify_models import isExpUnexp
 from utils import Options
 from mne.stats import permutation_cluster_1samp_test
 import plotting.PtitPrince as pt
+import ipdb
 
 
 def plot_by_nvoxels(data, measure='distance', tfce_pvals=None):
@@ -19,7 +20,7 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None):
         else they're computed here
     """
     
-    nsubjs = data.nsubjects.nunique()
+    nsubjs = data.subject.nunique()
     maxvoxels = data.nvoxels.max()
     
     # should this be provided already averaged?
@@ -28,7 +29,8 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None):
     avgdiffs = accs_to_diffs(avgdata)
     
     if tfce_pvals is None:
-        subxvoxels = df_to_array_tfce(avgdata, measure=measure, labels=False)
+        subxvoxels = df_to_array_tfce(avgdata.groupby(['subject','nvoxels','expected']).mean().reset_index(),
+                                      measure=measure)
         threshold_tfce = dict(start=0, step=0.01)
         _, _, tfce_pvals, _ = permutation_cluster_1samp_test(
             subxvoxels, n_jobs=1, threshold=threshold_tfce, adjacency=None,
@@ -124,30 +126,18 @@ def accs_to_diffs(df, measure='correct'):
 
 
     
-def df_to_array_tfce(df, measure='correct', labels=False):
-    if labels:
-        samples = [] #np.empty((0, df.nvoxels.nunique()))
-        #samples = np.zeros((df.subject.nunique()*2, df.nvoxels.nunique()))
-        labels = []
-        subjects = []
-        for sub in np.sort(df.subject.unique()):
-            for e in [True, False]:
-                thisdata = df[(df['subject']==sub)&(df['expected']==e)]
-                thesevoxelnos = np.zeros(df.nvoxels.nunique())
-                for j, nv in enumerate(np.sort(df.nvoxels.unique())):
-                    thesevoxelnos[j] = thisdata[thisdata['nvoxels']==nv][measure].values
-                samples.append(thesevoxelnos) #np.append(samples, thesevoxelnos, axis=0)
-                labels.append(e)
-                subjects.append(sub)
-        samples = np.array(samples)
-        subxvoxels = {'samples': samples, 'labels': labels, 'subjects': subjects}
-    else:
-        subxvoxels = np.zeros((df.subject.nunique(), df.nvoxels.nunique()))
-        for i, sub in enumerate(np.sort(df.subject.unique())):
-            for j, nv in enumerate(np.sort(df.nvoxels.unique())):
-                thisdata = df[(df['subject']==sub)&(df['nvoxels']==nv)]
+def df_to_array_tfce(df, measure='correct'):
+    """
+    """
+    subxvoxels = np.zeros((df.subject.nunique(), df.nvoxels.nunique()))
+    for i, sub in enumerate(np.sort(df.subject.unique())):
+        for j, nv in enumerate(np.sort(df.nvoxels.unique())):
+            thisdata = df[(df['subject']==sub)&(df['nvoxels']==nv)]
+            try:
                 subxvoxels[i, j] = thisdata[thisdata['expected']==True][measure].values - \
                     thisdata[thisdata['expected']==False][measure].values
+            except:
+                ipdb.set_trace()
     return subxvoxels
 
 

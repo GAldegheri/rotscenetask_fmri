@@ -10,6 +10,7 @@ def merge_results(res_list):
     for r in res_list:
         all_results.append(pd.read_csv(r))
     all_results = pd.concat(all_results)
+    all_results = all_results.replace(np.nan, 'none')
     return all_results
 
 def get_subj_avg(results, avg_decodedirs=False):
@@ -80,12 +81,12 @@ def parse_roi_info(results):
                 elif 'top-' in allinfo[contrindx+1]:
                     nvoxels.append(int(allinfo[contrindx+1].split('top-')[1]))
             else:
-                contrasts.append(None)
-                nvoxels.append(None)
+                contrasts.append('none')
+                nvoxels.append('none')
         else:
             hemispheres.append('LR')
-            contrasts.append(None)
-            nvoxels.append(None)
+            contrasts.append('none')
+            nvoxels.append('none')
     
     results['roi'] = roinames
     results['hemi'] = hemispheres
@@ -93,6 +94,27 @@ def parse_roi_info(results):
     results['nvoxels'] = nvoxels
     
     return results
+
+def fill_in_nvoxels(results):
+    ind_vars = ['subject', 'roi', 'approach', 
+                'traindataformat', 'testdataformat', 'traintask',
+                'testtask', 'trainmodel', 'testmodel', 
+                'hemi', 'contrast', 'expected']
+    ind_vars = [i for i in ind_vars if i in results.columns]
+    
+    # get unique combinations of independent variables:
+    varcombinations = [r.to_dict() for _, r in
+                       results[ind_vars].drop_duplicates().iterrows()]
+    for vc in varcombinations:
+        for i, v in enumerate(vc):
+            if i==0:
+                thismask = results[v]==vc[v]
+            else:
+                thismask &= results[v]==vc[v]
+        theseresults = results[thismask]
+        #for nv in theseresults.nvoxels.unique():
+    
+    return
             
 if __name__=="__main__":
     results = merge_results(['/project/3018040.05/MVPA_results/mainanalysis.csv'])

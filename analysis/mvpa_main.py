@@ -186,6 +186,7 @@ def save_allres(res_list, out_file):
     
     if len(allres) > 0:
         allres = pd.concat(allres)
+        allres = allres.replace(np.nan, 'none')
         fpath = os.path.join(data_dir, out_file)
         allres.to_csv(fpath, index=False)
         print('Saving to ', fpath)
