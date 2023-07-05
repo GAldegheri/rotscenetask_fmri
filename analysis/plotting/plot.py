@@ -13,18 +13,24 @@ import plotting.PtitPrince as pt
 import ipdb
 
 
-def plot_by_nvoxels(data, measure='distance', tfce_pvals=None):
+def plot_by_nvoxels(avgdata, measure='distance', tfce_pvals=None):
     """
     - data: pandas dataframe containing the data
     - tfce_pvals are provided if they have been precomputed,
         else they're computed here
     """
     
-    nsubjs = data.subject.nunique()
-    maxvoxels = data.nvoxels.max()
+    nsubjs = avgdata.subject.nunique()
+    maxvoxels = avgdata.nvoxels.max()
+    
+    # sort n. voxels and make categorical
+    avgdata.sort_values('nvoxels', inplace=True, ascending=True)
+    avgdata.loc[:, 'nvoxels'] = avgdata.loc[:, 'nvoxels'].astype(str)
+    avgdata.loc[:, 'nvoxels'] = pd.Categorical(avgdata.loc[:, 'nvoxels'], 
+                                               categories=avgdata.nvoxels.unique(), ordered=True)
     
     # should this be provided already averaged?
-    avgdata = data.groupby(['subject', 'nvoxels', 'expected', 'hemi']).mean().reset_index()
+    #avgdata = data.groupby(['subject', 'nvoxels', 'expected', 'hemi']).mean().reset_index()
     
     avgdiffs = accs_to_diffs(avgdata)
     

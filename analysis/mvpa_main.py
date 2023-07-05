@@ -116,13 +116,6 @@ def decoding_approaches(sub, roi, approach, task, model, dataformat):
             try:
                 testDS = loadfun(test_opt, mask_templ=mask_templ)
             except:
-                print('*******************')
-                print('*******************')
-                print('Subject:', sub, ' - ROI ', roi, 
-                      ' - trainmodel ', trainmodel,
-                      ' - testmodel ', testmodel)
-                print('*******************')
-                print('*******************')
                 testDS = loadfun_test(test_opt, mask_templ=mask_templ)
             
             testDS = correct_labels(testDS, test_opt)

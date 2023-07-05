@@ -1,5 +1,16 @@
 import pandas as pd
 import warnings
+import numpy as np
+import ipdb
+
+def quick_get_results(res_list):
+    """
+    Combines all relevant data
+    reading functions for quick access
+    to the data.
+    """
+    results = merge_results(res_list)
+    #results = get_subj_avg(
 
 def merge_results(res_list):
     """
@@ -25,12 +36,20 @@ def get_subj_avg(results, avg_decodedirs=False):
         # remove traintask, trainmodel, testtask, testmodel...
         ind_vars = [i for i in ind_vars if 'train' not in i and 'test' not in i]
         groupedres = []
-        taskmodelpairs = list(results[['traintask', 'trainmodel']].drop_duplicates().itertuples(index=False, name=None))
-        for t, m in taskmodelpairs:
-            thistm = results[((results['traintask']==t)&(results['trainmodel']==m))|\
-                ((results['testtask']==t)&(results['testmodel']==m))]
+        taskmodelpairs = list(results[['traintask', 'trainmodel',
+                                      'testtask', 'testmodel']].drop_duplicates().itertuples(index=False, name=None))
+        taskmodelpairs = [((a, b), (c, d)) for a, b, c, d in taskmodelpairs]
+        taskmodelpairs = {frozenset(x) for x in taskmodelpairs}
+        taskmodelpairs = [tuple(x) for x in taskmodelpairs]
+        for (trtask, trm), (tetask, tem) in taskmodelpairs:
+            thistm_fwd = results[(results['traintask']==trtask)&(results['trainmodel']==trm)&\
+                                 (results['testtask']==tetask)&(results['testmodel']==tem)]
+            thistm_back = results[(results['traintask']==tetask)&(results['trainmodel']==tem)&\
+                                 (results['testtask']==trtask)&(results['testmodel']==trm)]
+            thistm = pd.concat([thistm_fwd, thistm_back])
             thesemodels = list(thistm.trainmodel.unique())
             thesetasks = list(thistm.traintask.unique())
+            assert len(thesemodels)==2 and len(thesetasks)==2
             thistm = thistm.groupby(ind_vars, dropna=False).mean().reset_index()
             thistm['traintask'] = thesetasks[0]+'_'+thesetasks[1]
             thistm['testtask'] = thesetasks[0]+'_'+thesetasks[1]
@@ -96,11 +115,19 @@ def parse_roi_info(results):
     return results
 
 def fill_in_nvoxels(results):
+    
+    nvox = {
+        r: sorted([n for n in results[results['roi']==r].nvoxels.unique() if n != 'none'])  for 
+            r in results.roi.unique()
+    }
+    
     ind_vars = ['subject', 'roi', 'approach', 
                 'traindataformat', 'testdataformat', 'traintask',
                 'testtask', 'trainmodel', 'testmodel', 
                 'hemi', 'contrast', 'expected']
     ind_vars = [i for i in ind_vars if i in results.columns]
+    
+    filledinres = []
     
     # get unique combinations of independent variables:
     varcombinations = [r.to_dict() for _, r in
@@ -108,15 +135,25 @@ def fill_in_nvoxels(results):
     for vc in varcombinations:
         for i, v in enumerate(vc):
             if i==0:
-                thismask = results[v]==vc[v]
+                thismask = np.array(results[v]==vc[v])
             else:
-                thismask &= results[v]==vc[v]
+                thismask &= np.array(results[v]==vc[v])
         theseresults = results[thismask]
-        #for nv in theseresults.nvoxels.unique():
+        max_nv = 0
+        for nv in nvox[vc['roi']]:
+            if len(theseresults[theseresults['nvoxels']==nv])>0:
+                max_nv = nv
+            elif max_nv != 0:
+                maxnvoxres = theseresults[theseresults['nvoxels']==max_nv].copy()
+                maxnvoxres['nvoxels'] = nv
+                theseresults = pd.concat([theseresults, maxnvoxres])
+        filledinres.append(theseresults)
     
-    return
+    filledinres = pd.concat(filledinres)
+    
+    return filledinres
             
 if __name__=="__main__":
     results = merge_results(['/project/3018040.05/MVPA_results/mainanalysis.csv'])
-    avgres = get_subj_avg(results, avg_decodedirs=True)
+    results = get_subj_avg(results, avg_decodedirs=True)
     
