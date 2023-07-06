@@ -10,8 +10,16 @@ def quick_get_results(res_list):
     to the data.
     """
     results = merge_results(res_list)
-    #results = get_subj_avg(
+    results = parse_roi_info(results)
+    results = exclude_participants(results)
+    results = get_subj_avg(results, avg_decodedirs=True)
+    results = fill_in_nvoxels(results)
+    return results
 
+def exclude_participants(results):
+    res = results[results['subject']!='sub-006']
+    return res
+    
 def merge_results(res_list):
     """
     Given list of results files,
@@ -47,8 +55,8 @@ def get_subj_avg(results, avg_decodedirs=False):
             thistm_back = results[(results['traintask']==tetask)&(results['trainmodel']==tem)&\
                                  (results['testtask']==trtask)&(results['testmodel']==trm)]
             thistm = pd.concat([thistm_fwd, thistm_back])
-            thesemodels = list(thistm.trainmodel.unique())
-            thesetasks = list(thistm.traintask.unique())
+            thesemodels = sorted(list(thistm.trainmodel.unique()))
+            thesetasks = sorted(list(thistm.traintask.unique()), reverse=True)
             assert len(thesemodels)==2 and len(thesetasks)==2
             thistm = thistm.groupby(ind_vars, dropna=False).mean().reset_index()
             thistm['traintask'] = thesetasks[0]+'_'+thesetasks[1]

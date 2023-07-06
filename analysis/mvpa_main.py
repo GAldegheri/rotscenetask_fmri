@@ -71,6 +71,10 @@ def decoding_approaches(sub, roi, approach, task, model, dataformat):
             DS = correct_labels(DS, opt)
             DS = DS.remove_nonfinite_features()
             res = decode_CV(DS, opt)
+            
+        else:
+            
+            res = None
         
     elif approach=='splithalf':
         # almost the same as CV - also just one dataset/task/model
@@ -85,6 +89,10 @@ def decoding_approaches(sub, roi, approach, task, model, dataformat):
             DS = correct_labels(DS, opt)
             DS = DS.remove_nonfinite_features()
             res = decode_SplitHalf(DS, opt)
+            
+        else:
+            
+            res = None
         
     elif approach in ['traintest', 'corr_traintest']:
         
