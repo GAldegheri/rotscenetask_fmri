@@ -6,6 +6,7 @@ from .classify_models import DivideInThirds, isExpUnexp, \
     is30or90, isAorB, isWideNarrow, isAllViews
 import warnings
 import random
+import ipdb
 
 # =================================================================================================
 # MVPA utilities

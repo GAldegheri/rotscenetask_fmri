@@ -8,6 +8,7 @@ from .mvpa_utils import randpick_third, combine_splits, split_views
 from .classify_models import isWideNarrow, isExpUnexp, \
     isAllViews, isAorB, is30or90, DivideInThirds
 import pandas as pd
+import ipdb
 
 # =================================================================================================
 # Decoding wrapper functions
@@ -82,7 +83,7 @@ def decode_thirds(expDS, opt, approach, otherDS=None, trainortest=None):
                     thisexpDS = expDS[0][expDS[0].sa.trialsplit==n]
                     thisDS = dataset.vstack([thisexpDS, expDS[1]], a=0)
                     res_exp.append(decodefun(thisDS))
-
+            ipdb.set_trace()
             res_exp = combine_splits(pd.concat(res_exp))
             
     return res_exp
@@ -294,6 +295,7 @@ def decode_CV(DS, opt):
                 
                 (expDS_1, expDS_2) = split_views(expDS, opt)
                 (unexpDS_1, unexpDS_2) = split_views(unexpDS, opt)
+                ipdb.set_trace()
                 res_exp_1 = decode_thirds(expDS_1, opt, 'CV')
                 res_exp_2 = decode_thirds(expDS_2, opt, 'CV')
                 res_exp = pd.concat([res_exp_1, res_exp_2])

@@ -4,6 +4,7 @@ from nipype.interfaces import spm
 from nipype.interfaces.spm.model import Level1Design, EstimateModel, EstimateContrast
 from nipype.interfaces.base import Bunch
 import nipype.interfaces.io as nio
+import pandas as pd
 
 def decode_timecourses(opt, approach, func_runs, motpar):
     """
@@ -39,7 +40,12 @@ def decode_timecourses(opt, approach, func_runs, motpar):
             
             DS = correct_labels(DS, opt)
             DS = DS.remove_nonfinite_features()
-            res = decode_CV(DS, opt)
+            
+            allres = []
+            
+            for d in delays:
+                thisDS = DS[DS.sa.delay==d]
+                allres.append(decode_CV(thisDS, opt))
             
     elif approach=='traintest':
         

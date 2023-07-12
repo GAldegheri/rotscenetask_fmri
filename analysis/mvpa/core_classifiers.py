@@ -65,9 +65,13 @@ def trainandtest_sklearn(trainDS, testDS, zscore_data=True):
         
         res['trialno'] = testDS.sa.trialno
         
-    elif hasattr(testDS.sa, 'TRno'):
+    if hasattr(testDS.sa, 'TRno'):
         
         res['TRno'] = testDS.sa.TRno
+        
+    if hasattr(testDS.sa, 'delay'):
+        
+        res['delay'] = testDS.sa.delay
         
     return res
     
