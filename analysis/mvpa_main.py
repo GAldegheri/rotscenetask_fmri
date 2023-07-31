@@ -100,17 +100,6 @@ def decoding_approaches(sub, roi, approach, task, model, dataformat):
             'For train/test, 2 tasks and 2 models must be provided as a tuple!'
         
         train_opt, test_opt = split_options(opt)
-        traintask = train_opt.task
-        trainmodel = train_opt.model
-        testtask = test_opt.task
-        testmodel = test_opt.model
-        
-        # key = f'train-{train_opt.task}m{train_opt.model:g}' + \
-        #     f'-test-{test_opt.task}m{test_opt.model:g}' + \
-        #         f'_{niceroi}_{whichformat}'
-        
-        # if approach=='corr_traintest':
-        #     key = 'corr-' + key
         
         try:
             trainDS = loadfun(train_opt, mask_templ=mask_templ)
@@ -148,10 +137,10 @@ def decoding_approaches(sub, roi, approach, task, model, dataformat):
         res['approach'] = approach
         res['traindataformat'] = traindataformat
         res['testdataformat'] = testdataformat
-        res['traintask'] = traintask
-        res['testtask'] = testtask
-        res['trainmodel'] = trainmodel
-        res['testmodel'] = testmodel
+        res['traintask'] = train_opt.task
+        res['testtask'] = test_opt.task
+        res['trainmodel'] = train_opt.model
+        res['testmodel'] = test_opt.model
         
         return res
     else:

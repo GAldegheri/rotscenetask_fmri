@@ -52,7 +52,7 @@ def decode_thirds(expDS, opt, approach, otherDS=None, trainortest=None):
                     thisres = trainandtest_sklearn(otherDS, thisexpDS, zscore_data=True)
                     thisres['split'] = n
                     splitsres.append(thisres)
-            res_exp = combine_splits(pd.concat(splitsres))
+            res_exp = pd.concat(splitsres)
     
     elif approach in ['CV', 'splithalf']:
         
@@ -72,19 +72,21 @@ def decode_thirds(expDS, opt, approach, otherDS=None, trainortest=None):
                 res_exp = decodefun(expunexpDS)
         
         else:
-            
             res_exp = []
             for n in range(1, 4):
                 if isWideNarrow(opt) or is30or90(opt) or isAllViews(opt) or isAorB(opt): # test model 7/13/12/15
                     thisexpDS = expDS[(expDS.sa.trialsplit==n)|(expDS.sa.trialsplit==None)]
-                    res_exp.append(decodefun(thisexpDS))
+                    thisres = decodefun(thisexpDS)
+                    thisres['split'] = n
+                    res_exp.append(thisres)
                 else: # test model 9
                     assert isinstance(expDS, tuple)
                     thisexpDS = expDS[0][expDS[0].sa.trialsplit==n]
                     thisDS = dataset.vstack([thisexpDS, expDS[1]], a=0)
-                    res_exp.append(decodefun(thisDS))
-            ipdb.set_trace()
-            res_exp = combine_splits(pd.concat(res_exp))
+                    thisres = decodefun(thisDS)
+                    thisres['split'] = n
+                    res_exp.append(thisres)
+            res_exp = pd.concat(res_exp)
             
     return res_exp
 
@@ -295,7 +297,6 @@ def decode_CV(DS, opt):
                 
                 (expDS_1, expDS_2) = split_views(expDS, opt)
                 (unexpDS_1, unexpDS_2) = split_views(unexpDS, opt)
-                ipdb.set_trace()
                 res_exp_1 = decode_thirds(expDS_1, opt, 'CV')
                 res_exp_2 = decode_thirds(expDS_2, opt, 'CV')
                 res_exp = pd.concat([res_exp_1, res_exp_2])

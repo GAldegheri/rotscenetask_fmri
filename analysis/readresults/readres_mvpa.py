@@ -1,19 +1,23 @@
 import pandas as pd
 import warnings
 import numpy as np
+import sys
+sys.path.append('..')
 import ipdb
 
-def quick_get_results(res_list):
+def quick_get_results(res_list, combine_thirds=True):
     """
     Combines all relevant data
     reading functions for quick access
     to the data.
     """
     results = merge_results(res_list)
+    if combine_thirds:
+        varcombs = get_varcombs(results)
     results = parse_roi_info(results)
     results = exclude_participants(results)
     results = get_subj_avg(results, avg_decodedirs=True)
-    results = fill_in_nvoxels(results)
+    #results = fill_in_nvoxels(results)
     return results
 
 def exclude_participants(results):
@@ -124,10 +128,69 @@ def parse_roi_info(results):
 
 def fill_in_nvoxels(results):
     
+    
+    # Get existing voxels numbers per each ROI
     nvox = {
         r: sorted([n for n in results[results['roi']==r].nvoxels.unique() if n != 'none'])  for 
             r in results.roi.unique()
     }
+    
+    def voxel_filling(theseres, nvox_dict=nvox):
+       
+       # maximum number of voxels in this set of results
+       max_nv = 0
+       for nv in nvox_dict[theseres.roi.unique()[0]]:
+            if len(theseres[theseres['nvoxels']==nv])>0:
+                max_nv = nv
+            elif max_nv != 0:
+                maxnvoxres = theseres[theseres['nvoxels']==max_nv].copy()
+                maxnvoxres['nvoxels'] = nv
+                theseres = pd.concat([theseres, maxnvoxres])
+       return theseres
+    
+    fillin_fn = lambda res: voxel_filling(res, nvox_dict=nvox)
+    
+    filledinres = apply_fn_to_varcombs(results, fillin_fn)
+    
+    return filledinres
+
+
+def combine_splits_all(results):
+    
+    from mvpa.decoding import combine_splits
+    
+    third_results = results[~pd.isnull(results['split'])]
+
+    combined_res = apply_fn_to_varcombs(third_results, combine_splits)
+    
+    return combined_res
+ 
+                
+def apply_fn_to_varcombs(results, func):
+    """
+    - results: a results dataframe.
+    - func: a lambda function taking results df as input and output 
+        (any extra input arguments need to be defined outside).
+    """
+    allres = []
+    varcombs = get_varcombs(results)
+    for vc in varcombs:
+        for i, v in enumerate(vc):
+            # Get results corresponding to this specific combination.
+            if i==0:
+                thismask = np.array(results[v]==vc[v])
+            else:
+                thismask &= np.array(results[v]==vc[v])
+        theseresults = results[thismask]
+        theseresults = func(theseresults)
+        allres.append(theseresults)
+        
+    allres = pd.concat(allres)
+    
+    return allres
+        
+
+def get_varcombs(results):
     
     ind_vars = ['subject', 'roi', 'approach', 
                 'traindataformat', 'testdataformat', 'traintask',
@@ -135,31 +198,11 @@ def fill_in_nvoxels(results):
                 'hemi', 'contrast', 'expected']
     ind_vars = [i for i in ind_vars if i in results.columns]
     
-    filledinres = []
-    
     # get unique combinations of independent variables:
     varcombinations = [r.to_dict() for _, r in
                        results[ind_vars].drop_duplicates().iterrows()]
-    for vc in varcombinations:
-        for i, v in enumerate(vc):
-            if i==0:
-                thismask = np.array(results[v]==vc[v])
-            else:
-                thismask &= np.array(results[v]==vc[v])
-        theseresults = results[thismask]
-        max_nv = 0
-        for nv in nvox[vc['roi']]:
-            if len(theseresults[theseresults['nvoxels']==nv])>0:
-                max_nv = nv
-            elif max_nv != 0:
-                maxnvoxres = theseresults[theseresults['nvoxels']==max_nv].copy()
-                maxnvoxres['nvoxels'] = nv
-                theseresults = pd.concat([theseresults, maxnvoxres])
-        filledinres.append(theseresults)
     
-    filledinres = pd.concat(filledinres)
-    
-    return filledinres
+    return varcombinations
             
 if __name__=="__main__":
     results = merge_results(['/project/3018040.05/MVPA_results/mainanalysis.csv'])

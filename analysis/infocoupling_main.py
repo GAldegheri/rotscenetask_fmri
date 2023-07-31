@@ -4,7 +4,6 @@ from nipype.interfaces import spm
 from nipype.interfaces.spm.model import Level1Design, EstimateModel, EstimateContrast
 from nipype.interfaces.base import Bunch
 import nipype.interfaces.io as nio
-import pandas as pd
 
 def decode_timecourses(opt, approach, func_runs, motpar):
     """
@@ -12,6 +11,7 @@ def decode_timecourses(opt, approach, func_runs, motpar):
     """
     import os
     import numpy as np
+    import pandas as pd
     import sys
     sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis/')
     from mvpa.loading import load_TRs
@@ -32,9 +32,8 @@ def decode_timecourses(opt, approach, func_runs, motpar):
     
     if approach=='CV':
         
-        DS = load_TRs(opt.sub, opt.task, 
-                      opt.model, TR_delay=delays, \
-                          mask_templ=mask_templ)
+        DS = load_TRs(opt, TR_delay=delays, \
+                      mask_templ=mask_templ)
         
         if DS is not None:
             
@@ -47,6 +46,56 @@ def decode_timecourses(opt, approach, func_runs, motpar):
                 thisDS = DS[DS.sa.delay==d]
                 allres.append(decode_CV(thisDS, opt))
             
+            allres = pd.concat(allres)
+            
+            return allres #, approach, func_runs, motpar
+        
+        else:
+            
+            return np.nan
+            
     elif approach=='traintest':
         
         train_opt, test_opt = split_options(opt)
+        
+        # only option for now, maybe implement more later
+        assert train_opt.task=='train' and test_opt.task=='test'
+        
+        # The TR delays here correspond to the start and end of the 
+        # miniblock, shifted by 6s. They're used all together.
+        trainDS = load_TRs(train_opt, TR_delay=range(6, 20), \
+                            mask_templ=mask_templ)
+        
+        if trainDS is not None:
+            
+            trainDS = correct_labels(trainDS, train_opt)
+            
+            testDS = load_TRs(test_opt, TR_delay=delays,
+                              mask_templ=mask_templ)
+            testDS = correct_labels(testDS, test_opt)
+            
+            nanmask = np.logical_and(np.all(np.isfinite(trainDS.samples), axis=0), \
+                np.all(np.isfinite(testDS.samples), axis=0))
+            trainDS = trainDS[:, nanmask]
+            testDS = testDS[:, nanmask]
+            
+            allres = []
+            
+            for d in delays:
+                thistestDS = testDS[testDS.sa.delay==d]
+                thisres = decode_traintest(trainDS, thistestDS, \
+                    train_opt, test_opt)
+            
+            allres = pd.concat(allres)
+            
+            return allres
+        
+        else:
+            
+            return np.nan
+        
+# ---------------------------------------------------------------------------------
+
+def extract_timecourse(res, approach, func_runs=None, motpar=None):
+    
+        
