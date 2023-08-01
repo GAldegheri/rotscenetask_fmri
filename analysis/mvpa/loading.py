@@ -21,7 +21,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 # Loading functions
 # =================================================================================================
 
-def load_betas(opt, mask_templ=None, bids_dir=cfg.bids_dir, fir=False):
+def load_betas(opt, mask_templ=None, bids_dir=cfg.bids_dir, fir=False, max_delay=float('inf')):
         
     betas_dir = bids_dir+'derivatives/spm-preproc/derivatives/spm-stats/betas/'
         
@@ -63,8 +63,9 @@ def load_betas(opt, mask_templ=None, bids_dir=cfg.bids_dir, fir=False):
             if not regr in exclude:
                 if fir:
                     bf_n = int(re.search(r'.*bf\((\d+)\)', regr).group(1))
-                    thisDS = mri.fmri_dataset(f, chunks=chunk_count[regr], targets=regr[:-6], mask=mask)
-                    thisDS.sa['basisfunc'] = [bf_n]
+                    thisDS = mri.fmri_dataset(f, chunks=chunk_count[regr], 
+                                              targets=regr[:regr.find('*bf')], mask=mask)
+                    thisDS.sa['bin'] = [bf_n]
                     AllDS.append(thisDS)
                 else:
                     AllDS.append(mri.fmri_dataset(f, chunks=chunk_count[regr], targets=regr, mask=mask))
