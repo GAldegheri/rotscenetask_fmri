@@ -48,20 +48,6 @@ def divide_in_thirds(DS):
 
 # -------------------------------------------------------------------------------------------------
 
-def combine_splits(res):
-    """
-    Given a results dataframe divided in three splits (of trials),
-    combine them in the appropriate way for each column.
-    """
-    for s in sorted(res.split.unique()):
-        thissplitlength = len(res[res['split']==s])
-        res.loc[res['split']==s, 'sample'] = list(range(thissplitlength))
-    
-    return res.groupby('sample').mean().reset_index().drop(
-        ['sample', 'split'], axis=1)
-
-# -------------------------------------------------------------------------------------------------
-
 def split_views(DS, opt):
     
     if (opt.task=='train' and opt.model==4) or (opt.task=='test' and opt.model in [12, 16, 20, 23]):

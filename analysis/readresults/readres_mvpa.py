@@ -12,11 +12,11 @@ def quick_get_results(res_list, combine_thirds=True):
     to the data.
     """
     results = merge_results(res_list)
-    if combine_thirds:
-        varcombs = get_varcombs(results)
+    #if combine_thirds:
+    #    varcombs = get_varcombs(results)
     results = parse_roi_info(results)
     results = exclude_participants(results)
-    results = get_subj_avg(results, avg_decodedirs=True)
+    #results = get_subj_avg(results, avg_decodedirs=True)
     #results = fill_in_nvoxels(results)
     return results
 
@@ -29,6 +29,9 @@ def merge_results(res_list):
     Given list of results files,
     returns a dataframe merging all of them.
     """
+    if not isinstance(res_list, list):
+        res_list = [res_list]
+    
     all_results = []
     for r in res_list:
         all_results.append(pd.read_csv(r))
@@ -41,7 +44,7 @@ def get_subj_avg(results, avg_decodedirs=False):
     ind_vars = ['subject', 'roi', 'approach', 
                 'traindataformat', 'testdataformat', 'traintask',
                 'testtask', 'trainmodel', 'testmodel', 
-                'hemi', 'contrast', 'nvoxels', 'expected']
+                'hemi', 'contrast', 'nvoxels', 'expected', 'split']
     ind_vars = [i for i in ind_vars if i in results.columns]
     
     if avg_decodedirs:
@@ -154,16 +157,29 @@ def fill_in_nvoxels(results):
     
     return filledinres
 
+def combine_splits(res):
+    """
+    Given a results dataframe divided in three splits (of trials),
+    combine them in the appropriate way for each column.
+    """
+    for s in sorted(res.split.unique()):
+        thissplitlength = len(res[res['split']==s])
+        res.loc[res['split']==s, 'sample'] = list(range(thissplitlength))
+    
+    return res.groupby('sample').mean().reset_index().drop(
+        ['sample'], axis=1)
 
 def combine_splits_all(results):
     
-    from mvpa.decoding import combine_splits
-    
     third_results = results[~pd.isnull(results['split'])]
+    nonthird_results = results[pd.isnull(results['split'])]
 
     combined_res = apply_fn_to_varcombs(third_results, combine_splits)
     
-    return combined_res
+    if len(nonthird_results) > 0:
+        combined_res = pd.concat([combined_res, nonthird_results])
+    
+    return combined_res.reset_index()
  
                 
 def apply_fn_to_varcombs(results, func):
@@ -195,7 +211,7 @@ def get_varcombs(results):
     ind_vars = ['subject', 'roi', 'approach', 
                 'traindataformat', 'testdataformat', 'traintask',
                 'testtask', 'trainmodel', 'testmodel', 
-                'hemi', 'contrast', 'expected']
+                'hemi', 'contrast', 'expected', 'chunk', 'view']
     ind_vars = [i for i in ind_vars if i in results.columns]
     
     # get unique combinations of independent variables:

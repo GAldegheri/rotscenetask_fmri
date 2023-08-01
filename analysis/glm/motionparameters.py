@@ -34,7 +34,7 @@ def read_motion_par(mp_files, task, run):
 
 # ---------------------------------------------------------------------------------
 
-def Add_Motion_Regressors(subj_info, task, use_motion_reg, motpar):
+def add_motion_regressors(subj_info, task, use_motion_reg, motpar):
     '''
     - subj_info: output of ModelSpecify
     - use_motion_reg: bool

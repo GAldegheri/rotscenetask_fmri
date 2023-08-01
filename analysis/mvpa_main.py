@@ -137,10 +137,16 @@ def decoding_approaches(sub, roi, approach, task, model, dataformat):
         res['approach'] = approach
         res['traindataformat'] = traindataformat
         res['testdataformat'] = testdataformat
-        res['traintask'] = train_opt.task
-        res['testtask'] = test_opt.task
-        res['trainmodel'] = train_opt.model
-        res['testmodel'] = test_opt.model
+        if isinstance(task, tuple):
+            res['traintask'] = task[0]
+            res['testtask'] = task[1]
+            res['trainmodel'] = model[0]
+            res['testmodel'] = model[1]
+        else:
+            res['traintask'] = task
+            res['testtask'] = task
+            res['trainmodel'] = model
+            res['testmodel'] = model
         
         return res
     else:
@@ -164,7 +170,7 @@ def save_allres(res_list, out_file):
     sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis')
     from configs import mvpa_outdir as data_dir
     import pandas as pd
-    import pdb
+    import numpy as np
     
     flat_list = [] # input is a list of lists, flatten into single list
     for r in res_list:
@@ -250,6 +256,8 @@ def main():
         else:
             roilist.append(r)
     
+    #roilist = ['ba-17-18_L_contr-objscrvsbas_top-1000', 'ba-17-18_R_contr-objscrvsbas_top-1000']
+    
     print('------------------- ROI list: -------------------')
     print(roilist)
     print('-------------------------------------------------')
@@ -288,7 +296,7 @@ def main():
                       name='savingnode', overwrite=True)
     
     # --------------------------------------
-    savingnode.inputs.out_file = 'mainanalysis.csv'
+    savingnode.inputs.out_file = 'splits_allsubjs.csv'
     print('Output file:', savingnode.inputs.out_file)
     # --------------------------------------
     

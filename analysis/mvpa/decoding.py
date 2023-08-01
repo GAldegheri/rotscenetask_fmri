@@ -4,7 +4,7 @@ from scipy.stats import pearsonr
 import random
 from .core_classifiers import trainandtest_sklearn, \
     CV_leaveoneout, SplitHalfCorr
-from .mvpa_utils import randpick_third, combine_splits, split_views
+from .mvpa_utils import randpick_third, split_views
 from .classify_models import isWideNarrow, isExpUnexp, \
     isAllViews, isAorB, is30or90, DivideInThirds
 import pandas as pd
