@@ -42,7 +42,7 @@ def add_motion_regressors(subj_info, task, use_motion_reg, motpar):
     '''
     import sys
     sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis/')
-    from mvpa.motionparameters import read_motion_par
+    from glm.motionparameters import read_motion_par
     
     if use_motion_reg:
         for run, _ in enumerate(subj_info):

@@ -4,6 +4,7 @@ import numpy as np
 from glob import glob
 import re
 import pandas as pd
+from tqdm import tqdm
 from collections.abc import Iterable
 import random
 import os
@@ -20,16 +21,23 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 # Loading functions
 # =================================================================================================
 
-def load_betas(opt, mask_templ=None, bids_dir=cfg.bids_dir, use_fir=False):
+def load_betas(opt, mask_templ=None, bids_dir=cfg.bids_dir, fir=False):
         
     betas_dir = bids_dir+'derivatives/spm-preproc/derivatives/spm-stats/betas/'
         
     datamodel = get_correct_model(opt)
     data_dir = os.path.join(betas_dir, f'{opt.sub}/{opt.task}/model_{datamodel:g}/')
+    if fir:
+        data_dir = os.path.join(data_dir, 'FIR')
+        if not os.path.isdir(data_dir):
+            raise Exception('FIR not found for this model!')
     
-    SPM = loadmat(data_dir + 'SPM.mat')
-    regr_names = [n[6:-6] if '*bf(1)' in n else n[6:] for n in SPM['SPM']['xX']['name']]
-    file_names = [data_dir + b.fname for b in SPM['SPM']['Vbeta']]
+    SPM = loadmat(os.path.join(data_dir, 'SPM.mat'))
+    if fir:
+        regr_names = [n[6:] for n in SPM['SPM']['xX']['name']]
+    else:
+        regr_names = [n[6:-6] if '*bf(1)' in n else n[6:] for n in SPM['SPM']['xX']['name']]
+    file_names = [os.path.join(data_dir, b.fname) for b in SPM['SPM']['Vbeta']]
     
     exclude = ['buttonpress', 'constant', 'tx', 'ty', 'tz', 'rx', 'ry', 'rz']
     chunk_count = {}
@@ -50,10 +58,16 @@ def load_betas(opt, mask_templ=None, bids_dir=cfg.bids_dir, use_fir=False):
     
         AllDS = []
 
-        for i, f in enumerate(file_names):
+        for i, f in enumerate(tqdm(file_names)):
             regr = regr_names[i]
             if not regr in exclude:
-                AllDS.append(mri.fmri_dataset(f, chunks=chunk_count[regr], targets=regr, mask=mask))
+                if fir:
+                    bf_n = int(re.search(r'.*bf\((\d+)\)', regr).group(1))
+                    thisDS = mri.fmri_dataset(f, chunks=chunk_count[regr], targets=regr[:-6], mask=mask)
+                    thisDS.sa['basisfunc'] = [bf_n]
+                    AllDS.append(thisDS)
+                else:
+                    AllDS.append(mri.fmri_dataset(f, chunks=chunk_count[regr], targets=regr, mask=mask))
                 chunk_count[regr] += 1
 
         AllDS = dataset.vstack(AllDS, a=0)
