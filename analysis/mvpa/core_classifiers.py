@@ -59,7 +59,7 @@ def trainandtest_sklearn(trainDS, testDS, zscore_data=True):
     
     res = pd.DataFrame({'correct': accuracy, 'output': outputs,
                         'rawdistance': dist, 'distance': zscoredist, 
-                        'chunk': testDS.sa.chunks})
+                        'runno': testDS.sa.chunks})
     
     if hasattr(testDS.sa, 'trialno'): # for trial betas
         
@@ -92,7 +92,7 @@ def CV_leaveoneout(DS, zscore_data=True):
         CV_res.append(thisres)
     
     CV_res = pd.concat(CV_res)
-    CV_res = CV_res.sort_values(by=['chunk'], ascending=True)
+    CV_res = CV_res.sort_values(by=['runno'], ascending=True)
     
     
     return CV_res

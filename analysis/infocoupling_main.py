@@ -4,22 +4,25 @@ from nipype.interfaces import spm
 from nipype.interfaces.spm.model import Level1Design, EstimateModel, EstimateContrast
 from nipype.interfaces.base import Bunch
 import nipype.interfaces.io as nio
+from nipype.interfaces.matlab import MatlabCommand
+MatlabCommand.set_default_paths('/home/common/matlab/spm12')
+from configs import project_dir
+import os
 import ipdb
 
-def decode_timecourses(sub, roi, task, model, approach, func_runs=None, motpar=None):
+# ---------------------------------------------------------------------------------
+
+def get_func_files(sub, roi, task, model, approach, preproc='smooth'):
     """
-    - opt: should contain sub, roi, task, model
+    
     """
     import os
-    import numpy as np
-    import pandas as pd
+    from glob import glob
+    from nipype.utils.misc import human_order_sorted
     import sys
     sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis/')
-    from mvpa.loading import load_TRs
-    from mvpa.decoding import decode_CV, decode_traintest
-    from mvpa.mvpa_utils import correct_labels
-    from configs import project_dir, bids_dir
-    from utils import Options, split_options
+    from utils import Options
+    from configs import bids_dir
     
     opt = Options(
             sub=sub,
@@ -27,6 +30,41 @@ def decode_timecourses(sub, roi, task, model, approach, func_runs=None, motpar=N
             task=task,
             model=model
             )
+    
+    if approach == 'CV':
+        univar_task = task
+    elif approach == 'traintest':
+        univar_task = task[1]
+    
+    # Functional runs for the given task
+    func_runs = glob(os.path.join(bids_dir, 'derivatives',
+                                  'spm-preproc', sub, preproc,
+                                  f'*_task-{univar_task}'))
+    func_runs = human_order_sorted(func_runs)
+    
+    motpar = glob(os.path.join(bids_dir, 'derivatives',
+                               'spm-preproc', sub, 'realign_unwarp',
+                               'rp_*.txt'))
+    motpar = human_order_sorted(motpar)
+    
+    return opt, approach, func_runs, motpar, univar_task
+    
+# ---------------------------------------------------------------------------------    
+
+def decode_timecourses(opt, approach, dataformat='TRs',
+                       func_runs=None, motpar=None):
+    """
+    """
+    import os
+    import numpy as np
+    import pandas as pd
+    import sys
+    sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis/')
+    from mvpa.loading import load_TRs, load_betas
+    from mvpa.decoding import decode_CV, decode_traintest
+    from mvpa.mvpa_utils import correct_labels
+    from configs import project_dir, bids_dir
+    from utils import split_options
     
     if 'contr' in opt.roi: # functional contrast
         roi_basedir = os.path.join(bids_dir, 'derivatives', 'spm-preproc', 
@@ -36,12 +74,18 @@ def decode_timecourses(sub, roi, task, model, approach, func_runs=None, motpar=N
         roi_basedir = os.path.join(project_dir, 'anat_roi_masks')
         mask_templ = os.path.join(roi_basedir, opt.roi + '.nii')
         
-    delays = range(9)
+    max_delay = 9
+    
+    if dataformat == 'TRs':
+        loadfun = lambda opt: load_TRs(opt, TR_delay=range(max_delay+1),
+            mask_templ=mask_templ)
+    elif dataformat == 'FIR':
+        loadfun = lambda opt: load_betas(opt, mask_templ=mask_templ, 
+                                         fir=True, max_delay=max_delay)
     
     if approach=='CV':
         
-        DS = load_TRs(opt, TR_delay=delays, \
-                      mask_templ=mask_templ)
+        DS = loadfun(opt)
         
         if DS is not None:
             
@@ -50,7 +94,7 @@ def decode_timecourses(sub, roi, task, model, approach, func_runs=None, motpar=N
             
             allres = []
             
-            for d in delays:
+            for d in range(max_delay):
                 thisDS = DS[DS.sa.delay==d]
                 allres.append(decode_CV(thisDS, opt))
             
@@ -67,17 +111,21 @@ def decode_timecourses(sub, roi, task, model, approach, func_runs=None, motpar=N
         # only option for now, maybe implement more later
         assert train_opt.task=='train' and test_opt.task=='test'
         
-        # The TR delays here correspond to the start and end of the 
-        # miniblock, shifted by 6s. They're used all together.
-        trainDS = load_TRs(train_opt, TR_delay=range(6, 20), \
-                            mask_templ=mask_templ)
+        if dataformat == 'TRs':
+            # The TR delays here correspond to the start and end of the 
+            # miniblock, shifted by 6s. They're used all together.
+            trainDS = load_TRs(train_opt, TR_delay=range(6, 20), \
+                                mask_templ=mask_templ)
+        elif dataformat == 'FIR':
+            # Just normal betas for training
+            trainDS = load_betas(train_opt, mask_templ=mask_templ,
+                                 fir=False)
         
         if trainDS is not None:
             
             trainDS = correct_labels(trainDS, train_opt)
             
-            testDS = load_TRs(test_opt, TR_delay=delays,
-                              mask_templ=mask_templ)
+            testDS = loadfun(test_opt)
             testDS = correct_labels(testDS, test_opt)
             
             nanmask = np.logical_and(np.all(np.isfinite(trainDS.samples), axis=0), \
@@ -87,7 +135,7 @@ def decode_timecourses(sub, roi, task, model, approach, func_runs=None, motpar=N
             
             allres = []
             
-            for d in delays:
+            for d in range(max_delay+1):
                 thistestDS = testDS[testDS.sa.delay==d]
                 thisres = decode_traintest(trainDS, thistestDS, \
                     train_opt, test_opt)
@@ -95,35 +143,36 @@ def decode_timecourses(sub, roi, task, model, approach, func_runs=None, motpar=N
             
             allres = pd.concat(allres)
             
-            if 'expected' in allres.columns:
-                assert 'split' in allres.columns
-                allres = allres.sort_values(by=['chunk', 'TRno', 'expected', 'split'])
-            else:
-                allres = allres.sort_values(by=['chunk', 'TRno'])
+            if dataformat == 'TRs':
+                if 'expected' in allres.columns:
+                    assert 'split' in allres.columns
+                    allres = allres.sort_values(by=['runno', 'TRno', 'expected', 'split'])
+                else:
+                    allres = allres.sort_values(by=['runno', 'TRno'])
         
         else:
             
             allres = None
         
     if allres is not None:
-        allres['subject'] = sub
-        allres['roi'] = roi
+        allres['subject'] = opt.sub
+        allres['roi'] = opt.roi
         allres['approach'] = approach
-        if isinstance(task, tuple):
-            allres['traintask'] = task[0]
-            allres['testtask'] = task[1]
-            allres['trainmodel'] = model[0]
-            allres['testmodel'] = model[1]
-        else:
-            allres['traintask'] = task
-            allres['testtask'] = task
-            allres['trainmodel'] = model
-            allres['testmodel'] = model
+        if approach == 'traintest':
+            allres['traintask'] = train_opt.task
+            allres['testtask'] = test_opt.task
+            allres['trainmodel'] = train_opt.model
+            allres['testmodel'] = test_opt.model
+        elif approach == 'CV':
+            allres['traintask'] = opt.task
+            allres['testtask'] = opt.task
+            allres['trainmodel'] = opt.model
+            allres['testmodel'] = opt.model
         
-        return allres
+        return allres, approach, func_runs, motpar
     
     else:
-        return np.nan
+        return np.nan, approach, func_runs, motpar
             
 # ---------------------------------------------------------------------------------
 
@@ -138,7 +187,35 @@ def save_timecourse(tc, sub, roi):
         
 # ---------------------------------------------------------------------------------
 
-def add_motion_regressors_infocoupl(subj_info, task, 
+def add_evidence_regressor(tc, func_runs, motpar):
+    import numpy as np
+    from nipype.interfaces.base import Bunch
+    
+    subj_info = []
+    
+    for run in tc.runno.unique():
+        
+        regressor_names = []
+        regressors = []
+        thisrun = tc[tc['runno']==run]
+        for i, exp in [(True, 'expected'), (False, 'unexpected')]:
+            regressor_names.append(exp)
+            thiscond = thisrun[thisrun['expected']==i]
+            allTRs = np.zeros((404, 1))
+            for _, r in thiscond.iterrows():
+                allTRs[r.TRno] = r.distance
+            regressors.append(allTRs.tolist())
+    
+        subj_info.append(Bunch(conditions=['dummy'], onsets=[[0.0]],
+                               durations=[[0.0]], 
+                               regressor_names=regressor_names,
+                               regressors=regressors))
+    
+    return subj_info, func_runs, motpar
+
+# ---------------------------------------------------------------------------------
+
+def add_motion_regressors_infocoupl(subj_info, univar_task, 
                                     func_runs, motpar,
                                     use_motion_reg=True):
     """
@@ -154,7 +231,7 @@ def add_motion_regressors_infocoupl(subj_info, task,
         for run in range(len(subj_info)):
             subj_info[run].regressor_names += ['tx', 'ty', 'tz',
                                                'rx', 'ry', 'rz']
-            subj_info[run].regressors += read_motion_par(motpar, task, run) # list of 6 columns
+            subj_info[run].regressors += read_motion_par(motpar, univar_task, run) # list of 6 columns
             
     return subj_info, func_runs
 
@@ -175,7 +252,10 @@ def main():
     
     # Datasink
     datasink = Node(nio.DataSink(parameterization=True), name='datasink')
-    datasink.inputs.base_directory = '/project/3018040.05/InfoCoupling'
+    outdir = os.path.join(project_dir, 'info_coupling')
+    if os.path.isdir(outdir):
+        os.mkdir(outdir)
+    datasink.inputs.base_directory = outdir
     subs = [('_sub_', '_'), ('_roi_', '')]
     datasink.inputs.substitutions = subs
     
@@ -183,34 +263,46 @@ def main():
     # Custom nodes
     # ------------------------------------------------------
     
-    # sub, roi, func_runs, motpar
-    all_options = Node(Function(input_names = ['sub', 'roi', 'task', 'preproc', 'base_directory'],
-                                output_names = ['sub', 'roi', 'func_runs', 'motpar'],
-                                function = alloptions), name = 'all_options')
-    all_options.inputs.task = 'test'
-    all_options.inputs.preproc = 'smooth'
-    all_options.inputs.base_directory = '/project/3018040.05/bids'
+    #Inputs: sub, roi, task, model, approach, preproc
+    #Outputs: sub, roi, task, model, approach, func_runs, motpar
+    getfiles = Node(Function(input_names = ['sub', 'roi',
+                                            'task', 'model',
+                                            'approach', 'preproc'],
+                             output_names = ['opt', 'approach', 
+                                             'func_runs', 'motpar',
+                                             'univar_task'], 
+                             function = get_func_files),
+                    name='getfiles')
+    getfiles.inputs.approach = 'traintest'
+    getfiles.inputs.task = ('train', 'test')
+    getfiles.inputs.model = (5, 15)
+    getfiles.inputs.preproc = 'smooth'
     
-    decode_timecourses = Node(Function(input_names = ['sub', 'roi', 'approach',
-                                                      'task', 'func_runs', 'motpar'],
-                                   output_names = ['res', 'approach', 'func_runs', 'motpar'],
-                                   function = decode_timecourses), name = 'decode_timecourses')
-    decode_timecourses.inputs.approach = 'traintest'
-    decode_timecourses.inputs.task = ('train', 'test')
-
-# ---------------------------------------------------------------------------------
-
-#def extract_timecourse(res, approach, func_runs=None, motpar=None):
+    #opt, approach, dataformat='TRs',
+    #                   func_runs=None, motpar=None
+    # allres, approach, func_runs, motpar
+    decode_timecourses = Node(Function(input_names=['opt', 'approach',
+                                                    'func_runs', 'motpar'],
+                                       output_names=['allres', 'approach',
+                                                     'func_runs', 'motpar'],
+                                       function = decode_timecourses),
+                              name = 'decode_timecourses')
+    
+    #add_regressor = Node(Function(input_names=[]))
+    
+    
+    
+    
     
 if __name__=="__main__":
     
-    from utils import Options
+    sub='sub-001'
+    task=('train', 'test')
+    model=(5, 15)
+    roi='ba-17-18_L_contr-objscrvsbas_top-1000'
+    approach = 'traintest'
     
-    opt = Options(
-        sub='sub-001',
-        task=('train', 'test'),
-        model=(5, 15),
-        roi='ba-17-18_L_contr-objscrvsbas_top-1000'
-    ) 
+    allres, _, _, _ = decode_timecourses(sub, roi, task, model, approach, dataformat='TRs',
+                       func_runs=None, motpar=None)
     
-    allres = decode_timecourses(opt, 'traintest')      
+    allres.to_csv('example_timecourse_TRs.csv', index=False)    

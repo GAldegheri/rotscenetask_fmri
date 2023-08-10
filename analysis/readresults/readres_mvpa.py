@@ -40,7 +40,7 @@ def merge_results(res_list):
     return all_results
 
 def get_subj_avg(results, avg_decodedirs=False):
-    results = results.drop(['chunk'], axis=1)
+    results = results.drop(['runno'], axis=1)
     ind_vars = ['subject', 'roi', 'approach', 
                 'traindataformat', 'testdataformat', 'traintask',
                 'testtask', 'trainmodel', 'testmodel', 
@@ -211,7 +211,7 @@ def get_varcombs(results):
     ind_vars = ['subject', 'roi', 'approach', 
                 'traindataformat', 'testdataformat', 'traintask',
                 'testtask', 'trainmodel', 'testmodel', 
-                'hemi', 'contrast', 'expected', 'chunk', 'view']
+                'hemi', 'contrast', 'expected', 'runno', 'view']
     ind_vars = [i for i in ind_vars if i in results.columns]
     
     # get unique combinations of independent variables:

@@ -2,5 +2,6 @@ __pycache__/
 .ipynb_checkpoints/
 crash-*.pklz
 *.nipype
+*.csv
 infocoupling/TR_timecourses/
 infocoupling/FIR_timecourses/
