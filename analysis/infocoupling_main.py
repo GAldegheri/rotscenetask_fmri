@@ -263,8 +263,6 @@ def main():
     # Custom nodes
     # ------------------------------------------------------
     
-    #Inputs: sub, roi, task, model, approach, preproc
-    #Outputs: sub, roi, task, model, approach, func_runs, motpar
     getfiles = Node(Function(input_names = ['sub', 'roi',
                                             'task', 'model',
                                             'approach', 'preproc'],
@@ -278,31 +276,157 @@ def main():
     getfiles.inputs.model = (5, 15)
     getfiles.inputs.preproc = 'smooth'
     
-    #opt, approach, dataformat='TRs',
-    #                   func_runs=None, motpar=None
-    # allres, approach, func_runs, motpar
-    decode_timecourses = Node(Function(input_names=['opt', 'approach',
-                                                    'func_runs', 'motpar'],
-                                       output_names=['allres', 'approach',
-                                                     'func_runs', 'motpar'],
-                                       function = decode_timecourses),
-                              name = 'decode_timecourses')
+    decode_tc = Node(Function(input_names=['opt', 'approach',
+                                           'func_runs', 'motpar'],
+                              output_names=['allres', 'approach',
+                                            'func_runs', 'motpar'],
+                              function = decode_timecourses),
+                     name = 'decode_timecourses')
     
-    #add_regressor = Node(Function(input_names=[]))
+    add_regressor = Node(Function(input_names=['tc', 'func_runs', 'motpar'],
+                                  output_names=['subj_info', 'func_runs', 'motpar'],
+                                  function = add_evidence_regressor),
+                         name = 'add_regressor')
     
+    add_motion_reg = Node(Function(input_names=['subj_info', 'univar_task',
+                                                'func_runs', 'motpar',
+                                                'use_motion_reg'],
+                                   output_names=['subj_info', 'func_runs'],
+                                   function=add_motion_regressors_infocoupl),
+                          name='add_motion_reg')
+    add_motion_reg.inputs.use_motion_reg = True
+    
+    # ------------------------------------------------------
+    # SPM functions
+    # ------------------------------------------------------
+    
+    # Node that defines the SPM model
+    spmmodel = Node(modelgen.SpecifySPMModel(), name='spmmodel')
+    spmmodel.inputs.high_pass_filter_cutoff = 128.
+    spmmodel.inputs.concatenate_runs = False
+    spmmodel.inputs.input_units = 'secs'
+    spmmodel.inputs.output_units = 'secs'
+    spmmodel.inputs.time_repetition = 1.0
+    
+    # Inputs:
+    # - subj_info
+    # - functional_runs
+    
+    # ------------------------------------------------------
+    
+    # Level 1 design node
+    level1design = Node(Level1Design(), name='level1design')
+    level1design.inputs.timing_units = 'secs'
+    level1design.inputs.interscan_interval = 1.0
+    level1design.inputs.bases = {'hrf':{'derivs': [0,0]}}
+    level1design.inputs.flags = {'mthresh': 0.8}
+    level1design.inputs.microtime_onset = 6.0
+    level1design.inputs.microtime_resolution = 11
+    level1design.inputs.model_serial_correlations = 'AR(1)'
+    level1design.inputs.volterra_expansion_order = 1
+
+    # Inputs:
+    # - session_info (from SpecifySPMModel)
+    
+    # ------------------------------------------------------
+    
+    # Estimate model node
+    modelest = Node(EstimateModel(), name='modelest')
+    modelest.inputs.estimation_method = {'Classical': 1}
+    modelest.inputs.write_residuals = False
+    
+    # Inputs:
+    # - SPM.mat file (from Level1Design)
+    
+    # ------------------------------------------------------
+    
+    contrasts = []
+    contrasts.append(('task>baseline', 'T', ['expected', 'unexpected'],
+                     [0.5, 0.5]))
+    contrasts.append(('exp>unexp', 'T', ['expected', 'unexpected'],
+                     [1., -1.]))
+    contrasts.append(('unexp>exp', 'T', ['expected', 'unexpected'],
+                      [-1., 1.]))
+    contrasts.append(('exp>baseline', 'T', ['expected'], [1.0]))
+    contrasts.append(('unexp>baseline', 'T', ['unexpected'], [1.0]))
+    
+    # Estimate contrast node
+    contrest = Node(EstimateContrast(), name='contrest')
+    contrest.inputs.contrasts = contrasts
+    
+    # Inputs:
+    # - Beta files
+    # - SPM.mat file
+    # - Contrasts
+    # - Residual image
+    
+    # ------------------------------------------------------
+    # Workflow
+    # ------------------------------------------------------
+    
+    infocoupl_wf = Workflow(name='infocoupl_wf')
+    infocoupl_wf.base_dir = project_dir
+    tobeconnected = [(subjinfo, getfiles, [('sub', 'sub'), ('roi', 'roi')]),
+                     (getfiles, decode_tc, [('opt', 'opt'), 
+                                            ('approach', 'approach'),
+                                            ('func_runs', 'func_runs'),
+                                            ('motpar', 'motpar')]),
+                     (getfiles, add_motion_reg, [('univar_task', 'univar_task')]),
+                     (decode_tc, add_regressor, [('allres', 'tc'),
+                                                 ('func_runs', 'func_runs'),
+                                                 ('motpar', 'motpar')]),
+                     (add_regressor, add_motion_reg, [('subj_info', 'subj_info'),
+                                                      ('func_runs', 'func_runs'),
+                                                      ('motpar', 'motpar')]),
+                     (add_motion_reg, spmmodel, [('subj_info', 'subject_info'),
+                                                 ('func_runs', 'functional_runs')]),
+                     (spmmodel, level1design, [('session_info', 'session_info')]),
+                     (level1design, modelest, [('spm_mat_file', 'spm_mat_file')]),
+                     (modelest, datasink, [('beta_images', 'betas'),
+                                           ('spm_mat_file', 'betas.@a'),
+                                           ('residual_image', 'betas.@b')]),
+                     (modelest, contrest, [('spm_mat_file', 'spm_mat_file')]),
+                     (modelest, contrest, [('beta_images', 'beta_images')]),
+                     (modelest, contrest, [('residual_image', 'residual_image')]),
+                     (contrest, datasink, [('con_images', 'contrasts'),
+                                    ('spmT_images', 'contrasts.@a'),
+                                    ('spm_mat_file', 'contrasts.@b')])
+                     ]
+    infocoupl_wf.connect(tobeconnected)
+    
+    # Draw workflow
+    infocoupl_wf.write_graph(graph2use='orig', dotfilename='./workflow_graphs/graph_infocoupl.dot')
+    
+    infocoupl_wf.config['execution']['poll_sleep_duration'] = 1
+    infocoupl_wf.config['execution']['job_finished_timeout'] = 120
+    infocoupl_wf.config['execution']['remove_unnecessary_outputs'] = True
+    infocoupl_wf.config['execution']['stop_on_first_crash'] = True
+
+    infocoupl_wf.config['logging'] = {
+            'log_directory': infocoupl_wf.base_dir+'/'+infocoupl_wf.name,
+            'log_to_file': False}
+
+    # run using PBS:
+    # infocoupl_wf.run()
+    # infocoupl_wf.run('PBS', plugin_args={'max_jobs' : 100,
+    #                                      'qsub_args': '-l walltime=1:00:00,mem=16g',
+    #                                      'max_tries':3,
+    #                                      'retry_timeout': 5,
+    #                                      'max_jobname_len': 15})
     
     
     
     
 if __name__=="__main__":
+    main()
     
-    sub='sub-001'
-    task=('train', 'test')
-    model=(5, 15)
-    roi='ba-17-18_L_contr-objscrvsbas_top-1000'
-    approach = 'traintest'
+    # sub='sub-001'
+    # task=('train', 'test')
+    # model=(5, 15)
+    # roi='ba-17-18_L_contr-objscrvsbas_top-1000'
+    # approach = 'traintest'
     
-    allres, _, _, _ = decode_timecourses(sub, roi, task, model, approach, dataformat='TRs',
-                       func_runs=None, motpar=None)
+    # allres, _, _, _ = decode_timecourses(sub, roi, task, model, approach, dataformat='TRs',
+    #                    func_runs=None, motpar=None)
     
-    allres.to_csv('example_timecourse_TRs.csv', index=False)    
+    # allres.to_csv('example_timecourse_TRs.csv', index=False)    

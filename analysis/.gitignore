@@ -5,3 +5,4 @@ crash-*.pklz
 *.csv
 infocoupling/TR_timecourses/
 infocoupling/FIR_timecourses/
+workflow_graphs/
