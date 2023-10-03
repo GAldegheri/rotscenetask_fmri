@@ -1,6 +1,6 @@
 from mvpa.loading import load_betas
 import os
-from utils import Options
+from general_utils import Options
 from configs import bids_dir
 
 

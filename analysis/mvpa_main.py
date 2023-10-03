@@ -1,5 +1,5 @@
 import sys
-from utils import Options
+from general_utils import Options
 import numpy as np
 from nipype import Node, JoinNode, MapNode, Workflow, \
     IdentityInterface, Function
@@ -26,7 +26,7 @@ def decoding_approaches(sub, roi, approach, task, model, dataformat):
     from mvpa.mvpa_utils import correct_labels, assign_loadfun
     from mvpa.decoding import decode_traintest, decode_CV, \
         decode_SplitHalf, traintest_dist
-    from utils import Options, split_options
+    from general_utils import Options, split_options
     from configs import project_dir, bids_dir
     import os
     import pdb

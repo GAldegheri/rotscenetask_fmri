@@ -5,10 +5,11 @@ from nipype.interfaces.spm.model import Level1Design, EstimateModel, EstimateCon
 from nipype.interfaces.base import Bunch
 import nipype.interfaces.io as nio
 from nipype.interfaces.matlab import MatlabCommand
-MatlabCommand.set_default_paths('/home/common/matlab/spm12')
+from configs import project_dir, spm_dir, matlab_cmd, bids_dir
+MatlabCommand.set_default_matlab_cmd(matlab_cmd)
+MatlabCommand.set_default_paths(spm_dir)
 from glm.motionparameters import add_motion_regressors
 import pandas as pd
-from configs import bids_dir
 
 # ---------------------------------------------------------------------------------
 

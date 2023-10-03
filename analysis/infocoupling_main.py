@@ -5,10 +5,12 @@ from nipype.interfaces.spm.model import Level1Design, EstimateModel, EstimateCon
 from nipype.interfaces.base import Bunch
 import nipype.interfaces.io as nio
 from nipype.interfaces.matlab import MatlabCommand
-MatlabCommand.set_default_paths('/home/common/matlab/spm12')
-from configs import project_dir
+from configs import project_dir, spm_dir, matlab_cmd
+MatlabCommand.set_default_matlab_cmd(matlab_cmd)
+MatlabCommand.set_default_paths(spm_dir)
+spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd)
+from general_utils import Options
 import os
-import ipdb
 
 # ---------------------------------------------------------------------------------
 
@@ -21,15 +23,7 @@ def get_func_files(sub, roi, task, model, approach, preproc='smooth'):
     from nipype.utils.misc import human_order_sorted
     import sys
     sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis/')
-    from utils import Options
     from configs import bids_dir
-    
-    opt = Options(
-            sub=sub,
-            roi=roi,
-            task=task,
-            model=model
-            )
     
     if approach == 'CV':
         univar_task = task
@@ -39,19 +33,20 @@ def get_func_files(sub, roi, task, model, approach, preproc='smooth'):
     # Functional runs for the given task
     func_runs = glob(os.path.join(bids_dir, 'derivatives',
                                   'spm-preproc', sub, preproc,
-                                  f'*_task-{univar_task}'))
+                                  f'*_task-{univar_task}_*_bold.nii'))
     func_runs = human_order_sorted(func_runs)
     
     motpar = glob(os.path.join(bids_dir, 'derivatives',
                                'spm-preproc', sub, 'realign_unwarp',
                                'rp_*.txt'))
     motpar = human_order_sorted(motpar)
-    
-    return opt, approach, func_runs, motpar, univar_task
+    print('Finished getting files!')
+    return sub, roi, task, model, approach, func_runs, motpar, univar_task
     
 # ---------------------------------------------------------------------------------    
 
-def decode_timecourses(opt, approach, dataformat='TRs',
+def decode_timecourses(sub, roi, task, model, 
+                       approach, dataformat='TRs',
                        func_runs=None, motpar=None):
     """
     """
@@ -64,7 +59,14 @@ def decode_timecourses(opt, approach, dataformat='TRs',
     from mvpa.decoding import decode_CV, decode_traintest
     from mvpa.mvpa_utils import correct_labels
     from configs import project_dir, bids_dir
-    from utils import split_options
+    from general_utils import Options, split_options
+    
+    opt = Options(
+        sub=sub,
+        roi=roi,
+        task=task,
+        model=model
+    )
     
     if 'contr' in opt.roi: # functional contrast
         roi_basedir = os.path.join(bids_dir, 'derivatives', 'spm-preproc', 
@@ -153,7 +155,8 @@ def decode_timecourses(opt, approach, dataformat='TRs',
         else:
             
             allres = None
-        
+    
+    #pdb.set_trace()    
     if allres is not None:
         allres['subject'] = opt.sub
         allres['roi'] = opt.roi
@@ -169,10 +172,10 @@ def decode_timecourses(opt, approach, dataformat='TRs',
             allres['trainmodel'] = opt.model
             allres['testmodel'] = opt.model
         
-        return allres, approach, func_runs, motpar
+        return allres, func_runs, motpar
     
     else:
-        return np.nan, approach, func_runs, motpar
+        return np.nan, func_runs, motpar
             
 # ---------------------------------------------------------------------------------
 
@@ -240,6 +243,7 @@ def add_motion_regressors_infocoupl(subj_info, univar_task,
 def main():
     
     subjlist = ['sub-{:03d}'.format(i) for i in range(1, 36)]
+    #subjlist = ['sub-001']
     roilist = ['ba-17-18_contr-objscrvsbas_top-500']
     
     # ------------------------------------------------------
@@ -253,8 +257,8 @@ def main():
     # Datasink
     datasink = Node(nio.DataSink(parameterization=True), name='datasink')
     outdir = os.path.join(project_dir, 'info_coupling')
-    if os.path.isdir(outdir):
-        os.mkdir(outdir)
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir)
     datasink.inputs.base_directory = outdir
     subs = [('_sub_', '_'), ('_roi_', '')]
     datasink.inputs.substitutions = subs
@@ -266,7 +270,9 @@ def main():
     getfiles = Node(Function(input_names = ['sub', 'roi',
                                             'task', 'model',
                                             'approach', 'preproc'],
-                             output_names = ['opt', 'approach', 
+                             output_names = ['sub', 'roi',
+                                             'task', 'model', 
+                                             'approach', 
                                              'func_runs', 'motpar',
                                              'univar_task'], 
                              function = get_func_files),
@@ -276,12 +282,14 @@ def main():
     getfiles.inputs.model = (5, 15)
     getfiles.inputs.preproc = 'smooth'
     
-    decode_tc = Node(Function(input_names=['opt', 'approach',
+    decode_tc = Node(Function(input_names=['sub', 'roi', 'task', 'model', 
+                                           'approach', 'dataformat',
                                            'func_runs', 'motpar'],
-                              output_names=['allres', 'approach',
+                              output_names=['allres',
                                             'func_runs', 'motpar'],
                               function = decode_timecourses),
                      name = 'decode_timecourses')
+    decode_tc.inputs.dataformat = 'TRs'
     
     add_regressor = Node(Function(input_names=['tc', 'func_runs', 'motpar'],
                                   output_names=['subj_info', 'func_runs', 'motpar'],
@@ -367,7 +375,8 @@ def main():
     infocoupl_wf = Workflow(name='infocoupl_wf')
     infocoupl_wf.base_dir = project_dir
     tobeconnected = [(subjinfo, getfiles, [('sub', 'sub'), ('roi', 'roi')]),
-                     (getfiles, decode_tc, [('opt', 'opt'), 
+                     (getfiles, decode_tc, [('sub', 'sub'), ('roi', 'roi'),
+                                            ('task', 'task'), ('model', 'model'), 
                                             ('approach', 'approach'),
                                             ('func_runs', 'func_runs'),
                                             ('motpar', 'motpar')]),
@@ -407,12 +416,12 @@ def main():
             'log_to_file': False}
 
     # run using PBS:
-    # infocoupl_wf.run()
-    # infocoupl_wf.run('PBS', plugin_args={'max_jobs' : 100,
-    #                                      'qsub_args': '-l walltime=1:00:00,mem=16g',
-    #                                      'max_tries':3,
-    #                                      'retry_timeout': 5,
-    #                                      'max_jobname_len': 15})
+    #infocoupl_wf.run()
+    infocoupl_wf.run('PBS', plugin_args={'max_jobs' : 100,
+                                         'qsub_args': '-l walltime=1:00:00,mem=16g',
+                                         'max_tries':3,
+                                         'retry_timeout': 5,
+                                         'max_jobname_len': 15})
     
     
     

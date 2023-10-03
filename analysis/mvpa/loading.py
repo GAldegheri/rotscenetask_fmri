@@ -10,7 +10,7 @@ import random
 import os
 import sys
 sys.path.append('..')
-from utils import loadmat
+from general_utils import loadmat
 from glm.modelspec import specify_model_funcloc, \
     specify_model_train, specify_model_test
 import configs as cfg
