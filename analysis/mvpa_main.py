@@ -1,10 +1,7 @@
-import sys
-from general_utils import Options
 import numpy as np
-from nipype import Node, JoinNode, MapNode, Workflow, \
+from nipype import Node, JoinNode, Workflow, \
     IdentityInterface, Function
 from configs import project_dir
-import pandas as pd
 
 # ---------------------------------------------------------------------------------
 
@@ -25,8 +22,8 @@ def decoding_approaches(sub, roi, approach, task, model, dataformat):
     sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis')
     from mvpa.mvpa_utils import correct_labels, assign_loadfun
     from mvpa.decoding import decode_traintest, decode_CV, \
-        decode_SplitHalf, traintest_dist
-    from general_utils import Options, split_options
+        decode_splithalf, traintest_dist
+    from utils import Options, split_options
     from configs import project_dir, bids_dir
     import os
     import pdb
@@ -58,7 +55,7 @@ def decoding_approaches(sub, roi, approach, task, model, dataformat):
         roi_basedir = os.path.join(project_dir, 'anat_roi_masks')
         mask_templ = os.path.join(roi_basedir, opt.roi + '.nii')
         
-    if approach=='CV':
+    if approach == 'CV':
         # Only need one task and one model
         
         #key = f'CV-{opt.task}m{opt.model:g}_{niceroi}_{whichformat}'
@@ -88,7 +85,7 @@ def decoding_approaches(sub, roi, approach, task, model, dataformat):
             
             DS = correct_labels(DS, opt)
             DS = DS.remove_nonfinite_features()
-            res = decode_SplitHalf(DS, opt)
+            res = decode_splithalf(DS, opt)
             
         else:
             
@@ -296,7 +293,7 @@ def main():
                       name='savingnode', overwrite=True)
     
     # --------------------------------------
-    savingnode.inputs.out_file = 'splits_allsubjs.csv'
+    savingnode.inputs.out_file = 'try_splits_allsubjs.csv'
     print('Output file:', savingnode.inputs.out_file)
     # --------------------------------------
     

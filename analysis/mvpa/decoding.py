@@ -3,7 +3,7 @@ import numpy as np
 from scipy.stats import pearsonr
 import random
 from .core_classifiers import trainandtest_sklearn, \
-    CV_leaveoneout, SplitHalfCorr
+    CV_leaveoneout, splithalfcorr
 from .mvpa_utils import randpick_third, split_views
 from .classify_models import isWideNarrow, isExpUnexp, \
     isAllViews, isAorB, is30or90, DivideInThirds
@@ -59,7 +59,7 @@ def decode_thirds(expDS, opt, approach, otherDS=None, trainortest=None):
         if approach=='CV':
             decodefun = lambda x: CV_leaveoneout(x, zscore_data=True)
         else:
-            decodefun = lambda x: SplitHalfCorr(x)
+            decodefun = lambda x: splithalfcorr(x)
         
         if justonethird:
             
@@ -344,10 +344,7 @@ def decode_CV(DS, opt):
     
 # -------------------------------------------------------------------------------------------------
 
-def decode_SplitHalf(DS, opt):
-    
-    task = opt.task
-    model = opt.model
+def decode_splithalf(DS, opt):
     
     if isExpUnexp(opt):
         
@@ -359,7 +356,7 @@ def decode_SplitHalf(DS, opt):
             if isWideNarrow(opt):
                 
                 res_exp = decode_thirds(expDS, opt, 'splithalf')
-                res_unexp = SplitHalfCorr(unexpDS)
+                res_unexp = splithalfcorr(unexpDS)
                 return (res_exp, res_unexp)
             
             else: # test model 9
@@ -371,7 +368,7 @@ def decode_SplitHalf(DS, opt):
         
     else: # vanilla crossval, no expected vs. unexpected
         
-        res = SplitHalfCorr(DS)
+        res = splithalfcorr(DS)
         return res   
 
 # -------------------------------------------------------------------------------------------------

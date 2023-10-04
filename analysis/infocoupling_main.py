@@ -9,7 +9,7 @@ from configs import project_dir, spm_dir, matlab_cmd
 MatlabCommand.set_default_matlab_cmd(matlab_cmd)
 MatlabCommand.set_default_paths(spm_dir)
 spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd)
-from general_utils import Options
+from utils import Options
 import os
 
 # ---------------------------------------------------------------------------------
@@ -59,7 +59,7 @@ def decode_timecourses(sub, roi, task, model,
     from mvpa.decoding import decode_CV, decode_traintest
     from mvpa.mvpa_utils import correct_labels
     from configs import project_dir, bids_dir
-    from general_utils import Options, split_options
+    from utils import Options, split_options
     
     opt = Options(
         sub=sub,

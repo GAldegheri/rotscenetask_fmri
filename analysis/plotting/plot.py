@@ -7,7 +7,7 @@ from matplotlib.gridspec import GridSpec
 import sys
 sys.path.append('..')
 from mvpa.classify_models import isExpUnexp
-from general_utils import Options
+from utils import Options
 from mne.stats import permutation_cluster_1samp_test
 import plotting.PtitPrince as pt
 import ipdb

@@ -99,7 +99,7 @@ def CV_leaveoneout(DS, zscore_data=True):
 
 # -------------------------------------------------------------------------------------------------
 
-def SplitHalfCorr(DS):
+def splithalfcorr(DS):
     
     t = np.unique(DS.sa.targets)
     assert(len(t)==2)
