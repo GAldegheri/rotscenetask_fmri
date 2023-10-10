@@ -75,7 +75,7 @@ def create_functional_roi(sub, roiname, nvoxels='all',
     
     if out_dir is None:
         out_dir = os.path.join(bids_dir, 'derivatives', 'spm-preproc',
-                               'derivatives', 'roi-masks')
+                               'derivatives', 'roi-masks', sub)
     
     out_file_templ = os.path.join(out_dir, roi_dict[roiname]['out_file_templ'])
     if (isinstance(nvoxels, str) and nvoxels == 'all'):
