@@ -156,11 +156,8 @@ def df_to_array_tfce(df, measure='correct'):
     for i, sub in enumerate(np.sort(df.subject.unique())):
         for j, nv in enumerate(np.sort(df.nvoxels.unique())):
             thisdata = df[(df['subject']==sub)&(df['nvoxels']==nv)]
-            try:
-                subxvoxels[i, j] = thisdata[thisdata['expected']==True][measure].values - \
-                    thisdata[thisdata['expected']==False][measure].values
-            except:
-                ipdb.set_trace()
+            subxvoxels[i, j] = thisdata[thisdata['expected']==True][measure].values - \
+                thisdata[thisdata['expected']==False][measure].values
     return subxvoxels
 
 

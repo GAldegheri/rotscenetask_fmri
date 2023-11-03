@@ -242,9 +242,12 @@ def main():
         else:
             roilist.append(r + '_allsignif')
 
-    #roilist = []
+    roilist = []
 
-    full_rois = ['ba-17-18_{:s}', 'LO_{:s}']
+    full_rois = [
+        'ba-17_{:s}', 'ba-18_{:s}',
+        'ba-19_{:s}', 'ba-37_{:s}',
+        'ba-17-18_{:s}', 'ba-19-37_{:s}']
     
     for r in full_rois:
         if '{:s}' in r:
@@ -269,14 +272,10 @@ def main():
                               function=decoding_approaches),
                      name='decodingnode', overwrite=True)
     
-    decodingnode.iterables = [('dataformat', ['betas', 'betas',
-                                              'betas', 'betas']),
-                              ('approach', ['traintest', 'traintest',
-                                            'traintest', 'traintest']),
-                              ('task', [('train', 'test'), ('test', 'train'),
-                                        ('train', 'test'), ('test', 'train')]),
-                              ('model', [(5, 15), (15, 5),
-                                         (5, 17), (17, 5)])]
+    decodingnode.iterables = [('dataformat', ['betas', 'betas']),
+                              ('approach', ['traintest', 'traintest']),
+                              ('task', [('train', 'test'), ('test', 'train')]),
+                              ('model', [(5, 15), (15, 5)])]
     decodingnode.synchronize = True
     
     # Gather results
@@ -293,7 +292,7 @@ def main():
                       name='savingnode', overwrite=True)
     
     # --------------------------------------
-    savingnode.inputs.out_file = 'try_splits_allsubjs.csv'
+    savingnode.inputs.out_file = 'results_wholerois.csv'
     print('Output file:', savingnode.inputs.out_file)
     # --------------------------------------
     

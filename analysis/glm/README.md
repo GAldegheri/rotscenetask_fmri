@@ -73,7 +73,7 @@ ___
 
 8.	Fake Final wide, Narrow, Expected, Unexpected (expected and unexpected assigned randomly)
 
-9.	Expected, Unexpected (random 1/3 of expected trials)
+9.	Expected (1, 2, 3), Unexpected
 
 	**Contrasts:**
 	1.	Unexpected vs. Expected
@@ -112,4 +112,4 @@ ___
 
 26.	Final rotation (30° vs. 90°), with half of trials
 
-
+27. Same as 9 (exp. 1, 2, 3, unexp.) but with specified seed.

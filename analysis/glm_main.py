@@ -136,6 +136,8 @@ def contrastspecify(spm_mat_file):
     
 def main():
     
+    use_FIR = True
+    
     # Utilities
     
     # Identity interface
@@ -180,7 +182,7 @@ def main():
                             function=modelspecify), name='spec_model')
 
     spec_model.itersource = ('get_events', 'task')
-    spec_model.iterables = [('model', {'test': [20]})]
+    spec_model.iterables = [('model', {'test': [23, 27]})]
     
     add_motion_reg = Node(Function(input_names=['subj_info', 'task', 'use_motion_reg', 'motpar'],
                                output_names=['subj_info'],
@@ -210,9 +212,10 @@ def main():
     level1design = Node(Level1Design(), name='level1design')
     level1design.inputs.timing_units = 'secs'
     level1design.inputs.interscan_interval = 1.0
-    #level1design.inputs.bases = {'hrf':{'derivs': [0,0]}}
-    #level1design.iterables  = [('bases', [{'fir': {'length': 20, 'order': 10}}])]
-    level1design.iterables = [('bases', [{'hrf': {'derivs': [0,0]}}])]
+    if use_FIR:
+        level1design.iterables  = [('bases', [{'fir': {'length': 20, 'order': 10}}])]
+    else:
+        level1design.iterables = [('bases', [{'hrf': {'derivs': [0,0]}}])]
     level1design.inputs.flags = {'mthresh': 0.8}
     level1design.inputs.microtime_onset = 6.0
     level1design.inputs.microtime_resolution = 11

@@ -176,14 +176,80 @@ def decode_timecourses(sub, roi, task, model,
     
     else:
         return np.nan, func_runs, motpar
+
+# ---------------------------------------------------------------------------------
+
+def correlate_timeseqs(tc, sub):
+    import pandas as pd
+    import numpy as np
+    import sys
+    sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis/')
+    from mvpa.loading import load_betas
+    from mvpa.mvpa_utils import split_expunexp
+    from utils import Options
+    from nilearn.image import new_img_like
+    
+    n_timepoints = tc.delay.nunique()
+    tc = tc.groupby(['delay', 'expected']).mean().reset_index()
+    
+    # load FIR timecourses
+    opt = Options(
+        sub=sub, 
+        task='test',
+        model=27
+    )
+    
+    wholebrainDS = load_betas(opt, mask_templ=None, 
+                             fir=True)
+    n_voxels = wholebrainDS.samples.shape[1] # before removing NaNs
+    wholebrainDS = split_expunexp(wholebrainDS)
+    nanmask = np.all(np.isfinite(wholebrainDS.samples), axis=0)
+    wholebrainDS = wholebrainDS[:, nanmask]
+    
+    univar_df = pd.DataFrame(
+        {'delay': wholebrainDS.sa.delay,
+         'expected': wholebrainDS.sa.expected,
+         'samples': list(wholebrainDS.samples)}
+    )
+    univar_df = univar_df.groupby(['delay', 'expected']).mean().reset_index()
+    
+    # Get (n. voxels x n. timepoints) arrays for exp and unexp
+    exp_univar_array = np.vstack(univar_df[univar_df.expected==1].samples).T
+    unexp_univar_array = np.vstack(univar_df[univar_df.expected==0].samples).T
+    # Normalize
+    exp_univar_array = (exp_univar_array - np.mean(exp_univar_array, axis=1, keepdims=True))/np.std(exp_univar_array, axis=1, keepdims=True)
+    unexp_univar_array = (unexp_univar_array - np.mean(unexp_univar_array, axis=1, keepdims=True))/np.std(unexp_univar_array, axis=1, keepdims=True)
+    
+    # Same thing for multivariate sequence
+    exp_multivar_array = np.hstack(tc[tc.expected==True].distance).reshape(1, n_timepoints)
+    unexp_multivar_array = np.hstack(tc[tc.expected==False].distance).reshape(1, n_timepoints)
+    exp_multivar_array = (exp_multivar_array - np.mean(exp_multivar_array, axis=1, keepdims=True))/np.std(exp_multivar_array, axis=1, keepdims=True)
+    unexp_multivar_array = (unexp_multivar_array - np.mean(unexp_multivar_array, axis=1, keepdims=True))/np.std(unexp_multivar_array, axis=1, keepdims=True)
+    
+    # Compute Pearsons correlations
+    exp_corrs = np.dot(exp_univar_array, exp_multivar_array.T)/(n_timepoints-1)
+    unexp_corrs = np.dot(unexp_univar_array, unexp_multivar_array.T)/(n_timepoints-1)
+    
+    # Convert into brain maps
+    i, j, k = wholebrainDS.fa.voxel_indices.T
+    
+    exp_map = np.full(wholebrainDS.a.voxel_dim, np.nan)
+    exp_map[i, j, k] = exp_corrs.flatten()
+    exp_map = new_img_like('/project/3018040.05/anat_roi_masks/wholebrain.nii', exp_map)
+    
+    unexp_map = np.full(wholebrainDS.a.voxel_dim, np.nan)
+    unexp_map[i, j, k] = unexp_corrs.flatten()
+    unexp_map = new_img_like('/project/3018040.05/anat_roi_masks/wholebrain.nii', unexp_map)
+    
+    return exp_map, unexp_map
             
 # ---------------------------------------------------------------------------------
 
-def save_timecourse(tc, sub, roi):
+def save_timecourses(tc, sub, roi):
     import os
     
     datadir = '/project/3018040.05/rotscenetask_fmri/analysis/infocoupling/'
-    filepath = os.path.join(datadir, f'TR_timecourses/{sub}_{roi}.csv')
+    filepath = os.path.join(datadir, f'FIR_timecourses/{sub}_{roi}_model-24.csv')
     tc.to_csv(filepath, index=False)
     
     return
@@ -244,7 +310,8 @@ def main():
     
     subjlist = ['sub-{:03d}'.format(i) for i in range(1, 36)]
     #subjlist = ['sub-001']
-    roilist = ['ba-17-18_contr-objscrvsbas_top-500']
+    roilist = ['ba-17-18_R_contr-objscrvsbas_top-500']
+    method = 'FIR'
     
     # ------------------------------------------------------
     # Utilities
@@ -279,7 +346,7 @@ def main():
                     name='getfiles')
     getfiles.inputs.approach = 'traintest'
     getfiles.inputs.task = ('train', 'test')
-    getfiles.inputs.model = (5, 15)
+    getfiles.inputs.model = (5, 24)
     getfiles.inputs.preproc = 'smooth'
     
     decode_tc = Node(Function(input_names=['sub', 'roi', 'task', 'model', 
@@ -289,7 +356,12 @@ def main():
                                             'func_runs', 'motpar'],
                               function = decode_timecourses),
                      name = 'decode_timecourses')
-    decode_tc.inputs.dataformat = 'TRs'
+    decode_tc.inputs.dataformat = method
+    
+    savingnode = Node(Function(input_names=['tc', 'sub', 'roi'],
+                               output_names=[],
+                               function=save_timecourses),
+                      name='save_timecourses')
     
     add_regressor = Node(Function(input_names=['tc', 'func_runs', 'motpar'],
                                   output_names=['subj_info', 'func_runs', 'motpar'],
@@ -372,6 +444,9 @@ def main():
     # Workflow
     # ------------------------------------------------------
     
+    mode = 'save' # 'save' or 'regress' - whether to just save 
+                  # decoding timecourses or use them as regressors
+    
     infocoupl_wf = Workflow(name='infocoupl_wf')
     infocoupl_wf.base_dir = project_dir
     tobeconnected = [(subjinfo, getfiles, [('sub', 'sub'), ('roi', 'roi')]),
@@ -379,28 +454,37 @@ def main():
                                             ('task', 'task'), ('model', 'model'), 
                                             ('approach', 'approach'),
                                             ('func_runs', 'func_runs'),
+                                            ('motpar', 'motpar')])]
+    if mode == 'regress':
+        tobeconnected += [
+            (getfiles, add_motion_reg, [('univar_task', 'univar_task')]),
+            (decode_tc, add_regressor, [('allres', 'tc'),
+                                        ('func_runs', 'func_runs'),
+                                        ('motpar', 'motpar')]),
+            (add_regressor, add_motion_reg, [('subj_info', 'subj_info'),
+                                            ('func_runs', 'func_runs'),
                                             ('motpar', 'motpar')]),
-                     (getfiles, add_motion_reg, [('univar_task', 'univar_task')]),
-                     (decode_tc, add_regressor, [('allres', 'tc'),
-                                                 ('func_runs', 'func_runs'),
-                                                 ('motpar', 'motpar')]),
-                     (add_regressor, add_motion_reg, [('subj_info', 'subj_info'),
-                                                      ('func_runs', 'func_runs'),
-                                                      ('motpar', 'motpar')]),
-                     (add_motion_reg, spmmodel, [('subj_info', 'subject_info'),
-                                                 ('func_runs', 'functional_runs')]),
-                     (spmmodel, level1design, [('session_info', 'session_info')]),
-                     (level1design, modelest, [('spm_mat_file', 'spm_mat_file')]),
-                     (modelest, datasink, [('beta_images', 'betas'),
-                                           ('spm_mat_file', 'betas.@a'),
-                                           ('residual_image', 'betas.@b')]),
-                     (modelest, contrest, [('spm_mat_file', 'spm_mat_file')]),
-                     (modelest, contrest, [('beta_images', 'beta_images')]),
-                     (modelest, contrest, [('residual_image', 'residual_image')]),
-                     (contrest, datasink, [('con_images', 'contrasts'),
-                                    ('spmT_images', 'contrasts.@a'),
-                                    ('spm_mat_file', 'contrasts.@b')])
-                     ]
+            (add_motion_reg, spmmodel, [('subj_info', 'subject_info'),
+                                        ('func_runs', 'functional_runs')]),
+            (spmmodel, level1design, [('session_info', 'session_info')]),
+            (level1design, modelest, [('spm_mat_file', 'spm_mat_file')]),
+            (modelest, datasink, [('beta_images', 'betas'),
+                                ('spm_mat_file', 'betas.@a'),
+                                ('residual_image', 'betas.@b')]),
+            (modelest, contrest, [('spm_mat_file', 'spm_mat_file')]),
+            (modelest, contrest, [('beta_images', 'beta_images')]),
+            (modelest, contrest, [('residual_image', 'residual_image')]),
+            (contrest, datasink, [('con_images', 'contrasts'),
+                        ('spmT_images', 'contrasts.@a'),
+                        ('spm_mat_file', 'contrasts.@b')])
+        ]
+    elif mode == 'save':
+        tobeconnected += [
+            (subjinfo, savingnode, [('sub', 'sub'), 
+                                    ('roi', 'roi')]),
+            (decode_tc, savingnode, [('allres', 'tc')])
+        ]
+                     
     infocoupl_wf.connect(tobeconnected)
     
     # Draw workflow
@@ -417,7 +501,7 @@ def main():
 
     # run using PBS:
     #infocoupl_wf.run()
-    infocoupl_wf.run('PBS', plugin_args={'max_jobs' : 100,
+    infocoupl_wf.run('PBS', plugin_args={'max_jobs' : 200,
                                          'qsub_args': '-l walltime=1:00:00,mem=16g',
                                          'max_tries':3,
                                          'retry_timeout': 5,
