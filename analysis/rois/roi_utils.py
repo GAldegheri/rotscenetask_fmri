@@ -8,7 +8,7 @@ import os
 import copy
 from nipype.interfaces.spm.utils import Reslice
 from collections.abc import Iterable
-import pdb
+from tqdm import tqdm
 
 # Useful models/contrasts in functional localizer:
 # - Model 1, contrast 1: object vs. scrambled
@@ -83,6 +83,9 @@ def create_functional_roi(sub, roiname, nvoxels='all',
     
     if split_lr:
         out_file_templ = out_file_templ.replace('_contr', '_{:s}_contr')
+        
+    if tthresh == float('-inf'):
+        out_file_templ = out_file_templ.replace('.nii', '_nothresh.nii')
     
     anat_mask = roi_dict[roiname]['anat_mask']
     tmap_file = os.path.join(bids_dir, 'derivatives', 'spm-preproc',
@@ -215,6 +218,9 @@ def reslice_spm(in_file, out_file=None):
         os.rename(reslicedfile, out_file)
     
 if __name__=="__main__":
-    nvoxels = 500 #np.arange(100, 600, 100)
-    create_functional_roi('sub-001', 'ba-17-18', nvoxels=nvoxels,
-                        split_lr=True, out_dir='..')
+    nvoxels = np.arange(100, 6100, 100)
+    allsubjs = [f'sub-{i:03d}' for i in range(1, 36)]
+    
+    for s in tqdm(allsubjs):
+        create_functional_roi(s, 'ba-19-37', nvoxels=nvoxels,
+                              split_lr=True, tthresh=float('-inf'))

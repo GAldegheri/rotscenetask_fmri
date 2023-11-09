@@ -198,14 +198,15 @@ def main():
     subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
     #subjlist = ['sub-001']
     
-    rois_to_use = ['ba-17-18_{:s}_contr-objscrvsbas', 'LO_{:s}_contr-objvscr']
+    rois_to_use = ['ba-17-18_{:s}_contr-objscrvsbas']
+    nothresh = True
     
     roilist = []
      
-    voxelnos_evc = np.arange(100, 3100, 100)
+    voxelnos_evc = np.arange(100, 6100, 100)
     voxelnos_loc = np.arange(100, 3100, 100)
     voxelnos_ppa = np.arange(100, 500, 100)
-    voxelnos_1937 = np.arange(100, 3100, 100)
+    voxelnos_1937 = np.arange(100, 6100, 100)
     voxelnos_17 = np.arange(100, 2100, 100)
     voxelnos_18 = np.arange(100, 2100, 100)
     voxelnos_19 = np.arange(100, 2100, 100)
@@ -228,10 +229,15 @@ def main():
         for vn in voxelnos:
             if '_{:s}' in r:
                 for s in ['L', 'R']:
-                    #pass
-                    roilist.append(r.format(s) + '_top-{:g}'.format(vn))
+                    thisroiname = r.format(s) + '_top-{:g}'.format(vn)
+                    if nothresh:
+                        thisroiname += '_nothresh'
+                    roilist.append(thisroiname)
             else:
-                roilist.append(r + '_top-{:g}'.format(vn))
+                thisroiname = r + '_top-{:g}'.format(vn)
+                if nothresh:
+                    thisroiname += '_nothresh'
+                roilist.append(thisroiname)
                 
     allsignif_rois = []
     
@@ -242,19 +248,17 @@ def main():
         else:
             roilist.append(r + '_allsignif')
 
-    roilist = []
-
-    full_rois = [
-        'ba-17_{:s}', 'ba-18_{:s}',
-        'ba-19_{:s}', 'ba-37_{:s}',
-        'ba-17-18_{:s}', 'ba-19-37_{:s}']
+    # full_rois = [
+    #     'ba-17_{:s}', 'ba-18_{:s}',
+    #     'ba-19_{:s}', 'ba-37_{:s}',
+    #     'ba-17-18_{:s}', 'ba-19-37_{:s}']
     
-    for r in full_rois:
-        if '{:s}' in r:
-            for s in ['L', 'R']:
-                roilist.append(r.format(s))
-        else:
-            roilist.append(r)
+    # for r in full_rois:
+    #     if '{:s}' in r:
+    #         for s in ['L', 'R']:
+    #             roilist.append(r.format(s))
+    #     else:
+    #         roilist.append(r)
     
     #roilist = ['ba-17-18_L_contr-objscrvsbas_top-1000', 'ba-17-18_R_contr-objscrvsbas_top-1000']
     
@@ -272,8 +276,14 @@ def main():
                               function=decoding_approaches),
                      name='decodingnode', overwrite=True)
     
-    decodingnode.iterables = [('dataformat', ['betas', 'betas']),
-                              ('approach', ['traintest', 'traintest']),
+    # decodingnode.iterables = [('dataformat', ['betas']*4),
+    #                           ('approach', ['traintest']*4),
+    #                           ('task', [('train', 'test'), ('test', 'train'),
+    #                                     ('train', 'test'), ('test', 'train')]),
+    #                           ('model', [(5, 15), (15, 5),
+    #                                      (5, 24), (24, 5)])]
+    decodingnode.iterables = [('dataformat', ['betas']*2),
+                              ('approach', ['traintest']*2),
                               ('task', [('train', 'test'), ('test', 'train')]),
                               ('model', [(5, 15), (15, 5)])]
     decodingnode.synchronize = True
@@ -292,7 +302,7 @@ def main():
                       name='savingnode', overwrite=True)
     
     # --------------------------------------
-    savingnode.inputs.out_file = 'results_wholerois.csv'
+    savingnode.inputs.out_file = 'results_main_nothresh_1718_m15.csv'
     print('Output file:', savingnode.inputs.out_file)
     # --------------------------------------
     

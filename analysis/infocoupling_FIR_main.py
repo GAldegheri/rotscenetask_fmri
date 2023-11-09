@@ -1,3 +1,6 @@
+from nipype import Node, Workflow, IdentityInterface, Function
+from configs import project_dir
+
 def decode_FIR_timecourses(sub, roi, task, model, approach):
     """
     """
@@ -6,7 +9,7 @@ def decode_FIR_timecourses(sub, roi, task, model, approach):
     import pandas as pd
     import sys
     sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis/')
-    from mvpa.loading import load_TRs, load_betas
+    from mvpa.loading import load_betas
     from mvpa.decoding import decode_CV, decode_traintest
     from mvpa.mvpa_utils import correct_labels
     from configs import project_dir, bids_dir
@@ -29,16 +32,10 @@ def decode_FIR_timecourses(sub, roi, task, model, approach):
         
     max_delay = 9
     
-    if dataformat == 'TRs':
-        loadfun = lambda opt: load_TRs(opt, TR_delay=range(max_delay+1),
-            mask_templ=mask_templ)
-    elif dataformat == 'FIR':
-        loadfun = lambda opt: load_betas(opt, mask_templ=mask_templ, 
-                                         fir=True, max_delay=max_delay)
-    
     if approach=='CV':
         
-        DS = loadfun(opt)
+        DS = load_betas(opt, mask_templ=mask_templ, fir=True,
+                        max_delay=max_delay)
         
         if DS is not None:
             
@@ -64,21 +61,16 @@ def decode_FIR_timecourses(sub, roi, task, model, approach):
         # only option for now, maybe implement more later
         assert train_opt.task=='train' and test_opt.task=='test'
         
-        if dataformat == 'TRs':
-            # The TR delays here correspond to the start and end of the 
-            # miniblock, shifted by 6s. They're used all together.
-            trainDS = load_TRs(train_opt, TR_delay=range(6, 20), \
-                                mask_templ=mask_templ)
-        elif dataformat == 'FIR':
-            # Just normal betas for training
-            trainDS = load_betas(train_opt, mask_templ=mask_templ,
-                                 fir=False)
+        # Just normal betas for training
+        trainDS = load_betas(train_opt, mask_templ=mask_templ,
+                                fir=False)
         
         if trainDS is not None:
             
             trainDS = correct_labels(trainDS, train_opt)
             
-            testDS = loadfun(test_opt)
+            testDS = load_betas(test_opt, mask_templ=mask_templ, 
+                                fir=True, max_delay=max_delay)
             testDS = correct_labels(testDS, test_opt)
             
             nanmask = np.logical_and(np.all(np.isfinite(trainDS.samples), axis=0), \
@@ -95,13 +87,6 @@ def decode_FIR_timecourses(sub, roi, task, model, approach):
                 allres.append(thisres)
             
             allres = pd.concat(allres)
-            
-            if dataformat == 'TRs':
-                if 'expected' in allres.columns:
-                    assert 'split' in allres.columns
-                    allres = allres.sort_values(by=['runno', 'TRno', 'expected', 'split'])
-                else:
-                    allres = allres.sort_values(by=['runno', 'TRno'])
         
         else:
             
@@ -123,14 +108,14 @@ def decode_FIR_timecourses(sub, roi, task, model, approach):
             allres['trainmodel'] = opt.model
             allres['testmodel'] = opt.model
         
-        return allres, func_runs, motpar
+        return allres, opt
     
     else:
-        return np.nan, func_runs, motpar
+        return np.nan, opt
 
 # ---------------------------------------------------------------------------------
 
-def correlate_timeseqs(tc, sub):
+def correlate_timeseqs(tc, opt):
     import pandas as pd
     import numpy as np
     import sys
@@ -144,13 +129,13 @@ def correlate_timeseqs(tc, sub):
     tc = tc.groupby(['delay', 'expected']).mean().reset_index()
     
     # load FIR timecourses
-    opt = Options(
-        sub=sub, 
+    univar_opt = Options(
+        sub=opt.sub, 
         task='test',
         model=27
     )
     
-    wholebrainDS = load_betas(opt, mask_templ=None, 
+    wholebrainDS = load_betas(univar_opt, mask_templ=None, 
                              fir=True)
     n_voxels = wholebrainDS.samples.shape[1] # before removing NaNs
     wholebrainDS = split_expunexp(wholebrainDS)
@@ -192,6 +177,106 @@ def correlate_timeseqs(tc, sub):
     unexp_map[i, j, k] = unexp_corrs.flatten()
     unexp_map = new_img_like('/project/3018040.05/anat_roi_masks/wholebrain.nii', unexp_map)
     
-    return exp_map, unexp_map
+    return exp_map, unexp_map, opt
             
 # ---------------------------------------------------------------------------------
+
+def save_corrmaps(exp_map, unexp_map, opt):
+    import nibabel as nb
+    import os
+    import pdb
+    
+    outdir = os.path.join('/project/3018040.05/',
+                          'FIR_correlations')
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir)
+    
+    try:
+        nb.save(exp_map, os.path.join(outdir,
+                                    opt.roi,
+                                    f'{opt.sub}_exp.nii'))
+        nb.save(unexp_map, os.path.join(outdir,
+                                    opt.roi,
+                                    f'{opt.sub}_unexp.nii'))
+    except:
+        pdb.set_trace()
+        
+    return    
+
+# ---------------------------------------------------------------------------------
+
+def main():
+    
+    #subjlist = ['sub-{:03d}'.format(i) for i in range(1, 36)]
+    subjlist = ['sub-001']
+    roilist = ['ba-17-18_contr-objscrvsbas_top-500']
+    
+    # ------------------------------------------------------
+    # Utilities
+    # ------------------------------------------------------
+    
+    # Identity interface
+    subjinfo = Node(IdentityInterface(fields=['sub', 'roi']), name='subjinfo')
+    subjinfo.iterables = [('sub', subjlist), ('roi', roilist)]
+    
+    # ------------------------------------------------------
+    # Custom nodes
+    # ------------------------------------------------------
+    
+    decode_tc = Node(Function(input_names = ['sub', 'roi',
+                                             'task', 'model',
+                                             'approach'],
+                              output_names = ['allres', 'opt'],
+                              function = decode_FIR_timecourses),
+                     name='decode_FIRs')
+    decode_tc.inputs.approach = 'traintest'
+    decode_tc.inputs.task = ('train', 'test')
+    decode_tc.inputs.model = (5, 24)
+    
+    correlate_node = Node(Function(input_names = ['tc', 'opt'],
+                                   output_names = ['exp_map', 'unexp_map', 'opt'],
+                                   function = correlate_timeseqs),
+                          name='correlate_timeseqs')
+    
+    saving_node = Node(Function(input_names = ['exp_map', 'unexp_map', 'opt'],
+                                output_names = [],
+                                function = save_corrmaps),
+                       name='save_corrmaps')
+    
+    # ------------------------------------------------------
+    # Workflow
+    # ------------------------------------------------------
+    
+    infoFIR_wf = Workflow(name='info_FIR_wf')
+    infoFIR_wf.base_dir = project_dir
+    
+    tobeconnected = [(subjinfo, decode_tc, [('sub', 'sub'),
+                                            ('roi', 'roi')]),
+                     (decode_tc, correlate_node, [('allres', 'tc'),
+                                                  ('opt', 'opt')]),
+                     (correlate_node, saving_node, [('exp_map', 'exp_map'),
+                                                    ('unexp_map', 'unexp_map'),
+                                                    ('opt', 'opt')])]
+    infoFIR_wf.connect(tobeconnected)
+    
+    infoFIR_wf.write_graph(graph2use='orig', dotfilename='./workflow_graphs/graph_infoFIR.dot')
+    
+    infoFIR_wf.config['execution']['poll_sleep_duration'] = 1
+    infoFIR_wf.config['execution']['job_finished_timeout'] = 120
+    infoFIR_wf.config['execution']['remove_unnecessary_outputs'] = True
+    infoFIR_wf.config['execution']['stop_on_first_crash'] = True
+
+    infoFIR_wf.config['logging'] = {
+            'log_directory': infoFIR_wf.base_dir+'/'+infoFIR_wf.name,
+            'log_to_file': False}
+    
+    infoFIR_wf.run()
+    # infoFIR_wf.run('PBS', plugin_args={'max_jobs' : 200,
+    #                                     'qsub_args': '-l walltime=1:00:00,mem=16g',
+    #                                     'max_tries':3,
+    #                                     'retry_timeout': 5,
+    #                                     'max_jobname_len': 15})
+    
+    
+if __name__ == "__main__":
+    main()

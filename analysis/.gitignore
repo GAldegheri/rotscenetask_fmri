@@ -3,6 +3,7 @@ __pycache__/
 crash-*.pklz
 *.nipype
 *.csv
+*.nii
 infocoupling/TR_timecourses/
 infocoupling/FIR_timecourses/
 workflow_graphs/
