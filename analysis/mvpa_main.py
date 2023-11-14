@@ -285,7 +285,7 @@ def main():
     decodingnode.iterables = [('dataformat', ['betas']*2),
                               ('approach', ['traintest']*2),
                               ('task', [('train', 'test'), ('test', 'train')]),
-                              ('model', [(5, 15), (15, 5)])]
+                              ('model', [(5, 24), (24, 5)])]
     decodingnode.synchronize = True
     
     # Gather results
@@ -302,7 +302,7 @@ def main():
                       name='savingnode', overwrite=True)
     
     # --------------------------------------
-    savingnode.inputs.out_file = 'results_main_nothresh_1718_m15.csv'
+    savingnode.inputs.out_file = 'results_main_nothresh_1718_m24.csv'
     print('Output file:', savingnode.inputs.out_file)
     # --------------------------------------
     

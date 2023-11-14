@@ -243,7 +243,7 @@ def add_motion_regressors_infocoupl(subj_info, univar_task,
 def main():
     
     subjlist = ['sub-{:03d}'.format(i) for i in range(1, 36)]
-    #subjlist = ['sub-001']
+    subjlist = ['sub-001']
     roilist = ['ba-17-18_R_contr-objscrvsbas_top-500']
     method = 'FIR'
     

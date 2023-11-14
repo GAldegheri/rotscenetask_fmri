@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 import sys
 sys.path.append('..')
-import ipdb
+from tqdm import tqdm
 
 def quick_get_results(res_list, combine_thirds=True):
     """
@@ -190,7 +190,7 @@ def apply_fn_to_varcombs(results, func):
     """
     allres = []
     varcombs = get_varcombs(results)
-    for vc in varcombs:
+    for vc in tqdm(varcombs):
         for i, v in enumerate(vc):
             # Get results corresponding to this specific combination.
             if i==0:

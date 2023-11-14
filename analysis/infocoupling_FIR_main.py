@@ -108,14 +108,14 @@ def decode_FIR_timecourses(sub, roi, task, model, approach):
             allres['trainmodel'] = opt.model
             allres['testmodel'] = opt.model
         
-        return allres, opt
+        return allres, sub, roi
     
     else:
-        return np.nan, opt
+        return np.nan, sub, roi
 
 # ---------------------------------------------------------------------------------
 
-def correlate_timeseqs(tc, opt):
+def correlate_timeseqs(tc, sub, roi):
     import pandas as pd
     import numpy as np
     import sys
@@ -124,20 +124,24 @@ def correlate_timeseqs(tc, opt):
     from mvpa.mvpa_utils import split_expunexp
     from utils import Options
     from nilearn.image import new_img_like
+    #import pdb
     
     n_timepoints = tc.delay.nunique()
-    tc = tc.groupby(['delay', 'expected']).mean().reset_index()
+    #pdb.set_trace()
+    try:
+        tc = tc.groupby(['delay', 'expected']).mean(numeric_only=False).reset_index()
+    except:
+        print(tc)
     
     # load FIR timecourses
     univar_opt = Options(
-        sub=opt.sub, 
+        sub=sub, 
         task='test',
         model=27
     )
     
     wholebrainDS = load_betas(univar_opt, mask_templ=None, 
                              fir=True)
-    n_voxels = wholebrainDS.samples.shape[1] # before removing NaNs
     wholebrainDS = split_expunexp(wholebrainDS)
     nanmask = np.all(np.isfinite(wholebrainDS.samples), axis=0)
     wholebrainDS = wholebrainDS[:, nanmask]
@@ -147,7 +151,7 @@ def correlate_timeseqs(tc, opt):
          'expected': wholebrainDS.sa.expected,
          'samples': list(wholebrainDS.samples)}
     )
-    univar_df = univar_df.groupby(['delay', 'expected']).mean().reset_index()
+    univar_df = univar_df.groupby(['delay', 'expected']).mean(numeric_only=False).reset_index()
     
     # Get (n. voxels x n. timepoints) arrays for exp and unexp
     exp_univar_array = np.vstack(univar_df[univar_df.expected==1].samples).T
@@ -177,38 +181,32 @@ def correlate_timeseqs(tc, opt):
     unexp_map[i, j, k] = unexp_corrs.flatten()
     unexp_map = new_img_like('/project/3018040.05/anat_roi_masks/wholebrain.nii', unexp_map)
     
-    return exp_map, unexp_map, opt
+    return exp_map, unexp_map, sub, roi
             
 # ---------------------------------------------------------------------------------
 
-def save_corrmaps(exp_map, unexp_map, opt):
+def save_corrmaps(exp_map, unexp_map, sub, roi):
     import nibabel as nb
     import os
-    import pdb
     
     outdir = os.path.join('/project/3018040.05/',
-                          'FIR_correlations')
+                          'FIR_correlations', roi)
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
     
-    try:
-        nb.save(exp_map, os.path.join(outdir,
-                                    opt.roi,
-                                    f'{opt.sub}_exp.nii'))
-        nb.save(unexp_map, os.path.join(outdir,
-                                    opt.roi,
-                                    f'{opt.sub}_unexp.nii'))
-    except:
-        pdb.set_trace()
-        
+    nb.save(exp_map, os.path.join(outdir,
+                                f'{sub}_exp.nii'))
+    nb.save(unexp_map, os.path.join(outdir,
+                                f'{sub}_unexp.nii'))
+    
     return    
 
 # ---------------------------------------------------------------------------------
 
 def main():
     
-    #subjlist = ['sub-{:03d}'.format(i) for i in range(1, 36)]
-    subjlist = ['sub-001']
+    #subjlist = ['sub-{:03d}'.format(i) for i in range(3, 36)]
+    subjlist = ['sub-003']
     roilist = ['ba-17-18_contr-objscrvsbas_top-500']
     
     # ------------------------------------------------------
@@ -226,19 +224,21 @@ def main():
     decode_tc = Node(Function(input_names = ['sub', 'roi',
                                              'task', 'model',
                                              'approach'],
-                              output_names = ['allres', 'opt'],
+                              output_names = ['allres', 'sub', 'roi'],
                               function = decode_FIR_timecourses),
                      name='decode_FIRs')
     decode_tc.inputs.approach = 'traintest'
     decode_tc.inputs.task = ('train', 'test')
     decode_tc.inputs.model = (5, 24)
     
-    correlate_node = Node(Function(input_names = ['tc', 'opt'],
-                                   output_names = ['exp_map', 'unexp_map', 'opt'],
+    correlate_node = Node(Function(input_names = ['tc', 'sub', 'roi'],
+                                   output_names = ['exp_map', 'unexp_map', 
+                                                   'sub', 'roi'],
                                    function = correlate_timeseqs),
                           name='correlate_timeseqs')
     
-    saving_node = Node(Function(input_names = ['exp_map', 'unexp_map', 'opt'],
+    saving_node = Node(Function(input_names = ['exp_map', 'unexp_map', 
+                                               'sub', 'roi'],
                                 output_names = [],
                                 function = save_corrmaps),
                        name='save_corrmaps')
@@ -253,10 +253,11 @@ def main():
     tobeconnected = [(subjinfo, decode_tc, [('sub', 'sub'),
                                             ('roi', 'roi')]),
                      (decode_tc, correlate_node, [('allres', 'tc'),
-                                                  ('opt', 'opt')]),
+                                                  ('sub', 'sub'),
+                                                  ('roi', 'roi')]),
                      (correlate_node, saving_node, [('exp_map', 'exp_map'),
                                                     ('unexp_map', 'unexp_map'),
-                                                    ('opt', 'opt')])]
+                                                    ('sub', 'sub'), ('roi', 'roi')])]
     infoFIR_wf.connect(tobeconnected)
     
     infoFIR_wf.write_graph(graph2use='orig', dotfilename='./workflow_graphs/graph_infoFIR.dot')
@@ -270,12 +271,12 @@ def main():
             'log_directory': infoFIR_wf.base_dir+'/'+infoFIR_wf.name,
             'log_to_file': False}
     
-    infoFIR_wf.run()
-    # infoFIR_wf.run('PBS', plugin_args={'max_jobs' : 200,
-    #                                     'qsub_args': '-l walltime=1:00:00,mem=16g',
-    #                                     'max_tries':3,
-    #                                     'retry_timeout': 5,
-    #                                     'max_jobname_len': 15})
+    #infoFIR_wf.run()
+    infoFIR_wf.run('PBS', plugin_args={'max_jobs' : 100,
+                                        'qsub_args': '-l walltime=1:00:00,mem=16g',
+                                        'max_tries':3,
+                                        'retry_timeout': 5,
+                                        'max_jobname_len': 15})
     
     
 if __name__ == "__main__":
