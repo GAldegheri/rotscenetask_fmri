@@ -4,6 +4,7 @@ import numpy as np
 import sys
 sys.path.append('..')
 from tqdm import tqdm
+from collections import OrderedDict
 
 def quick_get_results(res_list, combine_thirds=True):
     """
@@ -153,7 +154,7 @@ def fill_in_nvoxels(results):
     
     fillin_fn = lambda res: voxel_filling(res, nvox_dict=nvox)
     
-    filledinres = apply_fn_to_varcombs(results, fillin_fn)
+    filledinres = apply_fn_with_groupby(results, fillin_fn)
     
     return filledinres
 
@@ -162,65 +163,55 @@ def combine_splits(res):
     Given a results dataframe divided in three splits (of trials),
     combine them in the appropriate way for each column.
     """
+    const_dict = save_constant_columns(res)
     for s in sorted(res.split.unique()):
         thissplitlength = len(res[res['split']==s])
         res.loc[res['split']==s, 'sample'] = list(range(thissplitlength))
     
-    return res.groupby('sample').mean().reset_index().drop(
+    res = res.groupby('sample', as_index=False).mean().drop(
         ['sample'], axis=1)
+    res = restore_constant_columns(res, const_dict)
+    return res
+    
 
 def combine_splits_all(results):
     
     third_results = results[~pd.isnull(results['split'])]
     nonthird_results = results[pd.isnull(results['split'])]
 
-    combined_res = apply_fn_to_varcombs(third_results, combine_splits)
+    combined_res = apply_fn_with_groupby(third_results, combine_splits)
     
     if len(nonthird_results) > 0:
         combined_res = pd.concat([combined_res, nonthird_results])
     
     return combined_res.reset_index()
  
-                
-def apply_fn_to_varcombs(results, func):
-    """
-    - results: a results dataframe.
-    - func: a lambda function taking results df as input and output 
-        (any extra input arguments need to be defined outside).
-    """
-    allres = []
-    varcombs = get_varcombs(results)
-    for vc in tqdm(varcombs):
-        for i, v in enumerate(vc):
-            # Get results corresponding to this specific combination.
-            if i==0:
-                thismask = np.array(results[v]==vc[v])
-            else:
-                thismask &= np.array(results[v]==vc[v])
-        theseresults = results[thismask]
-        theseresults = func(theseresults)
-        allres.append(theseresults)
-        
-    allres = pd.concat(allres)
-    
-    return allres
-        
-
-def get_varcombs(results):
-    
+ 
+def apply_fn_with_groupby(results, func):
     ind_vars = ['subject', 'roi', 'approach', 
                 'traindataformat', 'testdataformat', 'traintask',
                 'testtask', 'trainmodel', 'testmodel', 
                 'hemi', 'contrast', 'expected', 'runno', 'view']
     ind_vars = [i for i in ind_vars if i in results.columns]
     
-    # get unique combinations of independent variables:
-    varcombinations = [r.to_dict() for _, r in
-                       results[ind_vars].drop_duplicates().iterrows()]
-    
-    return varcombinations
+    const_dict = save_constant_columns(results)
+    return results.groupby(ind_vars, as_index=False).apply(func).reset_index(drop=True)
+
+def save_constant_columns(df):
+    const_dict = OrderedDict()
+    for col in df.columns:
+        if df[col].nunique()==1:
+            const_dict[col] = df[col].iloc[0]
+    return const_dict
             
+def restore_constant_columns(df, const_dict):
+    for k, v in const_dict.items():
+        df[k] = v
+    return df
+           
 if __name__=="__main__":
-    results = merge_results(['/project/3018040.05/MVPA_results/mainanalysis.csv'])
-    results = get_subj_avg(results, avg_decodedirs=True)
+    #results = merge_results(['/project/3018040.05/MVPA_results/mainanalysis.csv'])
+    #results = get_subj_avg(results, avg_decodedirs=True)
+    results = quick_get_results(['/project/3018040.05/MVPA_results/results_main_nothresh_1718_m15.csv'])
+    comb_results = combine_splits_all(results)
     

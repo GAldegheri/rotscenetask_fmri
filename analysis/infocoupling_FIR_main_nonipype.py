@@ -1,5 +1,4 @@
-from nipype import Node, Workflow, IdentityInterface, Function
-from configs import project_dir
+import argparse
 
 def decode_FIR_timecourses(sub, roi, task, model, approach):
     """
@@ -191,7 +190,7 @@ def save_corrmaps(exp_map, unexp_map, sub, roi):
     import os
     
     outdir = os.path.join('/project/3018040.05/',
-                          'FIR_correlations', roi)
+                          'FIR_correlations', 'test_m15', roi)
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
     
@@ -204,81 +203,34 @@ def save_corrmaps(exp_map, unexp_map, sub, roi):
 
 # ---------------------------------------------------------------------------------
 
-def main():
+def main(sub, roi):
+    print('--------------------------------')
+    print(f'Subject: {sub}, ROI: {roi}')
+    print('--------------------------------')
     
-    #subjlist = ['sub-{:03d}'.format(i) for i in range(3, 36)]
-    subjlist = ['sub-003']
-    roilist = ['ba-17-18_contr-objscrvsbas_top-500']
-    
-    # ------------------------------------------------------
-    # Utilities
-    # ------------------------------------------------------
-    
-    # Identity interface
-    subjinfo = Node(IdentityInterface(fields=['sub', 'roi']), name='subjinfo')
-    subjinfo.iterables = [('sub', subjlist), ('roi', roilist)]
-    
-    # ------------------------------------------------------
-    # Custom nodes
-    # ------------------------------------------------------
-    
-    decode_tc = Node(Function(input_names = ['sub', 'roi',
-                                             'task', 'model',
-                                             'approach'],
-                              output_names = ['allres', 'sub', 'roi'],
-                              function = decode_FIR_timecourses),
-                     name='decode_FIRs')
-    decode_tc.inputs.approach = 'traintest'
-    decode_tc.inputs.task = ('train', 'test')
-    decode_tc.inputs.model = (5, 24)
-    
-    correlate_node = Node(Function(input_names = ['tc', 'sub', 'roi'],
-                                   output_names = ['exp_map', 'unexp_map', 
-                                                   'sub', 'roi'],
-                                   function = correlate_timeseqs),
-                          name='correlate_timeseqs')
-    
-    saving_node = Node(Function(input_names = ['exp_map', 'unexp_map', 
-                                               'sub', 'roi'],
-                                output_names = [],
-                                function = save_corrmaps),
-                       name='save_corrmaps')
-    
-    # ------------------------------------------------------
-    # Workflow
-    # ------------------------------------------------------
-    
-    infoFIR_wf = Workflow(name='info_FIR_wf')
-    infoFIR_wf.base_dir = project_dir
-    
-    tobeconnected = [(subjinfo, decode_tc, [('sub', 'sub'),
-                                            ('roi', 'roi')]),
-                     (decode_tc, correlate_node, [('allres', 'tc'),
-                                                  ('sub', 'sub'),
-                                                  ('roi', 'roi')]),
-                     (correlate_node, saving_node, [('exp_map', 'exp_map'),
-                                                    ('unexp_map', 'unexp_map'),
-                                                    ('sub', 'sub'), ('roi', 'roi')])]
-    infoFIR_wf.connect(tobeconnected)
-    
-    infoFIR_wf.write_graph(graph2use='orig', dotfilename='./workflow_graphs/graph_infoFIR.dot')
-    
-    infoFIR_wf.config['execution']['poll_sleep_duration'] = 1
-    infoFIR_wf.config['execution']['job_finished_timeout'] = 120
-    infoFIR_wf.config['execution']['remove_unnecessary_outputs'] = True
-    infoFIR_wf.config['execution']['stop_on_first_crash'] = True
+    print('Starting decoding...')
+    allres, sub, roi = decode_FIR_timecourses(sub, roi, 
+                                              ('train', 'test'),
+                                              (5, 15), 'traintest')
+    print('Done! Computing correlations...')
+    exp_map, unexp_map, sub, roi = correlate_timeseqs(allres, sub, roi)
+    print('Done!')
+    save_corrmaps(exp_map, unexp_map, sub, roi)
+    print('Saved files.')
+    return
 
-    infoFIR_wf.config['logging'] = {
-            'log_directory': infoFIR_wf.base_dir+'/'+infoFIR_wf.name,
-            'log_to_file': False}
-    
-    #infoFIR_wf.run()
-    infoFIR_wf.run('PBS', plugin_args={'max_jobs' : 100,
-                                        'qsub_args': '-l walltime=1:00:00,mem=16g',
-                                        'max_tries':3,
-                                        'retry_timeout': 5,
-                                        'max_jobname_len': 15})
-    
-    
-if __name__ == "__main__":
-    main()
+# ---------------------------------------------------------------------------------
+
+if __name__=="__main__":
+    # Create the parser
+    parser = argparse.ArgumentParser()
+
+    # Add arguments
+    parser.add_argument("--sub", required=True, type=str, help="Subject")
+    parser.add_argument("--roi", required=True, type=str, help="ROI")
+
+    # Parse arguments
+    args = parser.parse_args()
+
+    # Call the main function with the args namespace
+    main(args.sub, args.roi)

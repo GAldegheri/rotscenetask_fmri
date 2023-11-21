@@ -37,25 +37,8 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None):
     avgdiffs = accs_to_diffs(avgdata).groupby(['subject', 'hemi']).mean().reset_index()
     
     if tfce_pvals is None:
-        if 'ba-17-18' in data.roi.unique():
-            tfce_pvals = [0.188,  0.005, 0.0067, 0.0078, 0.0088, 
-                          0.0106, 0.0109, 0.0115, 0.0127, 0.0148,
-                          0.0201, 0.0424, 0.0224, 0.0237, 0.0244, 
-                          0.0273, 0.0321, 0.0357, 0.0391, 0.0424,
-                          0.0435, 0.0462, 0.0119, 0.0435, 0.0039,
-                          0.0055, 0.0062, 0.003,  0.003,  0.0039]
-        elif 'LO' in data.roi.unique():
-            tfce_pvals = [0.8016, 0.5093, 0.5406, 0.5151, 0.5151,
-                          0.4857, 0.4423, 0.4658, 0.4912, 0.4541,
-                          0.4191, 0.4912, 0.4307, 0.7372, 0.5799,
-                          0.4968, 0.4597, 0.5747, 0.4968, 0.5747]
-        else:
-            subxvoxels = df_to_array_tfce(avgdata.groupby(['subject','nvoxels','expected']).mean().reset_index(),
-                                          measure=measure)
-            threshold_tfce = dict(start=0, step=0.01)
-            _, _, tfce_pvals, _ = permutation_cluster_1samp_test(
-                subxvoxels, n_jobs=1, threshold=threshold_tfce, adjacency=None,
-                n_permutations=10000, out_type='mask') #10000
+        _, _, tfce_pvals, _ = get_tfce_stats(avgdata.groupby(['subject','nvoxels','expected']).mean().reset_index(),
+                                             measure=measure, n_perms=1000)
             
     fig = plt.figure(figsize=(20,10))
     gs = GridSpec(1, 4, figure=fig)
@@ -133,9 +116,16 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None):
     #plt.savefig('Plots/EVC_nvox_distance.pdf')
     plt.show()
 
+def get_tfce_stats(data, measure='distance', n_perms=10000):
+    subxvoxels = df_to_array_tfce(data.groupby(['subject','nvoxels','expected']).mean().reset_index(),
+                                        measure=measure)
+    threshold_tfce = dict(start=0, step=0.01)
+    t_obs, clusters, cluster_pv, H0 = permutation_cluster_1samp_test(
+        subxvoxels, n_jobs=1, threshold=threshold_tfce, adjacency=None,
+        n_permutations=n_perms, out_type='mask')
+    return t_obs, clusters, cluster_pv, H0
 
-
-def accs_to_diffs(df, measure='correct'):
+def accs_to_diffs(df, measure='distance'):
     diffs = []
     for nv in df.nvoxels.unique():
         for hemi in df.hemi.unique():

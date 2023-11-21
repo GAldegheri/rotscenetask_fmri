@@ -7,3 +7,4 @@ crash-*.pklz
 infocoupling/TR_timecourses/
 infocoupling/FIR_timecourses/
 workflow_graphs/
+torque/jobs/

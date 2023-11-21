@@ -26,7 +26,7 @@ def decoding_approaches(sub, roi, approach, task, model, dataformat):
     from utils import Options, split_options
     from configs import project_dir, bids_dir
     import os
-    import pdb
+    
     
     opt = Options(
         sub=sub,
@@ -198,7 +198,7 @@ def main():
     subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
     #subjlist = ['sub-001']
     
-    rois_to_use = ['ba-17-18_{:s}_contr-objscrvsbas']
+    rois_to_use = ['ba-19-37_{:s}_contr-objscrvsbas']
     nothresh = True
     
     roilist = []
@@ -248,17 +248,14 @@ def main():
         else:
             roilist.append(r + '_allsignif')
 
-    # full_rois = [
-    #     'ba-17_{:s}', 'ba-18_{:s}',
-    #     'ba-19_{:s}', 'ba-37_{:s}',
-    #     'ba-17-18_{:s}', 'ba-19-37_{:s}']
+    full_rois = ['ba-17-18_{:s}', 'ba-19-37_{:s}']
     
-    # for r in full_rois:
-    #     if '{:s}' in r:
-    #         for s in ['L', 'R']:
-    #             roilist.append(r.format(s))
-    #     else:
-    #         roilist.append(r)
+    for r in full_rois:
+        if '{:s}' in r:
+            for s in ['L', 'R']:
+                roilist.append(r.format(s))
+        else:
+            roilist.append(r)
     
     #roilist = ['ba-17-18_L_contr-objscrvsbas_top-1000', 'ba-17-18_R_contr-objscrvsbas_top-1000']
     
@@ -285,7 +282,7 @@ def main():
     decodingnode.iterables = [('dataformat', ['betas']*2),
                               ('approach', ['traintest']*2),
                               ('task', [('train', 'test'), ('test', 'train')]),
-                              ('model', [(5, 24), (24, 5)])]
+                              ('model', [(5, 15), (15, 5)])]
     decodingnode.synchronize = True
     
     # Gather results
@@ -302,7 +299,7 @@ def main():
                       name='savingnode', overwrite=True)
     
     # --------------------------------------
-    savingnode.inputs.out_file = 'results_main_nothresh_1718_m24.csv'
+    savingnode.inputs.out_file = 'results_main_nothresh_1937_m15.csv'
     print('Output file:', savingnode.inputs.out_file)
     # --------------------------------------
     
