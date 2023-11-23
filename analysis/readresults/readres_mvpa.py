@@ -131,7 +131,11 @@ def parse_roi_info(results):
     return results
 
 def fill_in_nvoxels(results):
-    
+    ind_vars = ['subject', 'roi', 'approach', 
+                'traindataformat', 'testdataformat', 'traintask',
+                'testtask', 'trainmodel', 'testmodel', 
+                'hemi', 'contrast', 'expected', 'runno', 'view']
+    ind_vars = [i for i in ind_vars if i in results.columns]
     
     # Get existing voxels numbers per each ROI
     nvox = {
@@ -154,7 +158,7 @@ def fill_in_nvoxels(results):
     
     fillin_fn = lambda res: voxel_filling(res, nvox_dict=nvox)
     
-    filledinres = apply_fn_with_groupby(results, fillin_fn)
+    filledinres = results.groupby(ind_vars, as_index=False, dropna=False).apply(fillin_fn).reset_index(drop=True)
     
     return filledinres
 
@@ -168,34 +172,56 @@ def combine_splits(res):
         thissplitlength = len(res[res['split']==s])
         res.loc[res['split']==s, 'sample'] = list(range(thissplitlength))
     
-    res = res.groupby('sample', as_index=False).mean().drop(
+    res = res.groupby('sample', as_index=False, dropna=False).mean().drop(
         ['sample'], axis=1)
     res = restore_constant_columns(res, const_dict)
     return res
     
 
-def combine_splits_all(results):
+# def combine_splits_all(results):
+#     ind_vars = ['subject', 'roi', 'approach', 
+#                 'traindataformat', 'testdataformat', 'traintask',
+#                 'testtask', 'trainmodel', 'testmodel', 
+#                 'hemi', 'nvoxels', 'contrast', 'expected', 'runno', 'view']
+#     ind_vars = [i for i in ind_vars if i in results.columns]
     
-    third_results = results[~pd.isnull(results['split'])]
-    nonthird_results = results[pd.isnull(results['split'])]
+#     third_results = results[~pd.isnull(results['split'])]
+#     nonthird_results = results[pd.isnull(results['split'])]
 
-    combined_res = apply_fn_with_groupby(third_results, combine_splits)
+#     combined_res = third_results.groupby
+#     #combined_res = third_results.groupby(ind_vars, as_index=False, dropna=False).apply(combine_splits).reset_index(drop=True)
+#     #combined_res = apply_fn_with_groupby(third_results, combine_splits)
     
-    if len(nonthird_results) > 0:
-        combined_res = pd.concat([combined_res, nonthird_results])
+#     if len(nonthird_results) > 0:
+#         combined_res = pd.concat([combined_res, nonthird_results])
     
-    return combined_res.reset_index()
+#     return combined_res.reset_index()
  
- 
-def apply_fn_with_groupby(results, func):
+def group_results(results, avg_across=['split']):
     ind_vars = ['subject', 'roi', 'approach', 
-                'traindataformat', 'testdataformat', 'traintask',
-                'testtask', 'trainmodel', 'testmodel', 
-                'hemi', 'contrast', 'expected', 'runno', 'view']
+        'traindataformat', 'testdataformat', 'traintask',
+        'testtask', 'trainmodel', 'testmodel', 
+        'hemi', 'nvoxels', 'contrast', 'expected', 'runno', 
+        'view', 'split']
     ind_vars = [i for i in ind_vars if i in results.columns]
     
-    const_dict = save_constant_columns(results)
-    return results.groupby(ind_vars, as_index=False).apply(func).reset_index(drop=True)
+    for v in avg_across:
+        if v in ind_vars:
+            ind_vars.remove(v)
+        else:
+            warnings.warn(f'Column {v} not found in dataframe!')
+    
+    grouped_res = results.groupby(ind_vars, as_index=False, dropna=False).mean().reset_index(drop=True)
+    return grouped_res
+ 
+# def apply_fn_with_groupby(results, func):
+#     ind_vars = ['subject', 'roi', 'approach', 
+#                 'traindataformat', 'testdataformat', 'traintask',
+#                 'testtask', 'trainmodel', 'testmodel', 
+#                 'hemi', 'nvoxels', 'contrast', 'expected', 'runno', 'view']
+#     ind_vars = [i for i in ind_vars if i in results.columns]
+    
+#     return results.groupby(ind_vars, as_index=False).apply(func).reset_index(drop=True)
 
 def save_constant_columns(df):
     const_dict = OrderedDict()
@@ -212,6 +238,8 @@ def restore_constant_columns(df, const_dict):
 if __name__=="__main__":
     #results = merge_results(['/project/3018040.05/MVPA_results/mainanalysis.csv'])
     #results = get_subj_avg(results, avg_decodedirs=True)
-    results = quick_get_results(['/project/3018040.05/MVPA_results/results_main_nothresh_1718_m15.csv'])
-    comb_results = combine_splits_all(results)
+    results = merge_results(['/project/3018040.05/MVPA_results/results_main_nothresh_1718_m15.csv'])
+    results = exclude_participants(results)
+    results = parse_roi_info(results)
+    grouped_res = group_results(results, avg_across=['split', 'view', 'runno', 'testmodel', 'hemi'])
     

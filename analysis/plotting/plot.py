@@ -13,7 +13,7 @@ import plotting.PtitPrince as pt
 import ipdb
 
 
-def plot_by_nvoxels(data, measure='distance', tfce_pvals=None):
+def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False):
     """
     - data: pandas dataframe containing the data
     - tfce_pvals are provided if they have been precomputed,
@@ -31,10 +31,6 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None):
     avgdata.loc[:, 'nvoxels'] = pd.Categorical(avgdata.loc[:, 'nvoxels'], 
                                                categories=avgdata.nvoxels.unique(), ordered=True)
     
-    # should this be provided already averaged?
-    #avgdata = data.groupby(['subject', 'nvoxels', 'expected', 'hemi']).mean().reset_index()
-    
-    avgdiffs = accs_to_diffs(avgdata).groupby(['subject', 'hemi']).mean().reset_index()
     
     if tfce_pvals is None:
         _, _, tfce_pvals, _ = get_tfce_stats(avgdata.groupby(['subject','nvoxels','expected']).mean().reset_index(),
@@ -43,7 +39,10 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None):
     fig = plt.figure(figsize=(20,10))
     gs = GridSpec(1, 4, figure=fig)
     with sns.axes_style('white'):
-        ax0 = fig.add_subplot(gs[0, :-1])
+        if right_part:
+            ax0 = fig.add_subplot(gs[0, :-1])
+        else:
+            ax0 = fig.add_subplot(gs[0, :])
         sns.lineplot(data=avgdata.groupby(['subject', 'nvoxels', 'expected']).mean().reset_index(), 
                      x='nvoxels', y=measure,
                      hue='expected', hue_order=[True, False], #linewidth=1,
@@ -65,53 +64,55 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None):
                 ax0.scatter(x, 0.04, marker=(6, 2, 0), s=200, color='k', linewidths=1.)
             elif tfce_pvals[x] < 0.05:
                 ax0.scatter(x, 0.02, marker=(6, 2, 0), s=200, color='k', linewidths=1.)
-    with sns.axes_style('white'):
-        ax1 = fig.add_subplot(gs[0, -1])
-        _, suppL, densL = pt.half_violinplot(y='difference', data=avgdiffs[avgdiffs['hemi']=='L'], color='.8', 
-                                            width=.3, inner=None, bw=.4, flip=False, CI=True, offset=0.04)
-        _, suppR, densR = pt.half_violinplot(y='difference', data=avgdiffs[avgdiffs['hemi']=='R'], color='.8', 
-                                            width=.3, inner=None, bw=.4, flip=True, CI=True, offset=0.04)
-        
-        densities_left = []
-        for d in avgdiffs[avgdiffs['hemi']=='L']['difference']:
-            ix, _ = find_nearest(suppL[0], d)
-            densities_left.append(densL[0][ix])
-        densities_left = np.array(densities_left).reshape(nsubjs,1)
-        scatter_left = -0.04-np.random.uniform(size=(nsubjs,1))*densities_left*0.15
-        plt.scatter(scatter_left, avgdiffs[avgdiffs['hemi']=='L']['difference'], color='black', alpha=.3)
-        densities_right = []
-        for d in avgdiffs[avgdiffs['hemi']=='R']['difference']:
-            ix, _ = find_nearest(suppR[0], d)
-            densities_right.append(densR[0][ix])
-        densities_right = np.array(densities_right).reshape(nsubjs,1)
-        scatter_right = 0.04+np.random.uniform(size=(nsubjs,1))*densities_right*0.15
-        plt.scatter(scatter_right, avgdiffs[avgdiffs['hemi']=='R']['difference'], color='black', alpha=.3)
-        
-        # Get mean and 95% CI:
-        meandiff = avgdiffs['difference'].mean()
-        tstats = pg.ttest(avgdiffs.groupby(['subject']).mean().reset_index()['difference'], 0.0)
-        ci95 = tstats['CI95%'][0]
-        #ax1.axis("equal")
-        #ax1.set_aspect('equal')
-        for tick in ax1.get_xticks():
-            #ax1.plot([tick-0.1, tick+0.1], [meandiff, meandiff],
-            #            lw=4, color='k')
-            ax1.plot([tick, tick], [ci95[0], ci95[1]], lw=3, color='k')
-            ax1.plot([tick-0.01, tick+0.01], [ci95[0], ci95[0]], lw=3, color='k')
-            ax1.plot([tick-0.01, tick+0.01], [ci95[1], ci95[1]], lw=3, color='k')
-            #circlemarker = plt.Circle((tick, meandiff), 0.015, color='k')
-            #ax1.add_patch(circlemarker)
-            ax1.plot(tick,meandiff, 'o', markersize=15, color='black')
-        ax1.axhline(0.0, linestyle='--', color='black')
-        plt.yticks(fontsize=20) 
-        ax1.set_xlabel('Average', fontsize=24)
-        ax1.set_ylabel('Δ Classifier information (a.u.)', fontsize=24)
-        ax1.set(ylim=(-0.4, 0.4))
-        ax1.axes_style = 'white'
-        ax1.spines['top'].set_visible(False)
-        ax1.spines['right'].set_visible(False)
-        ax1.spines['bottom'].set_visible(False)
-        #ax1.spines['left'].set_visible(False)
+    if right_part:
+        avgdiffs = accs_to_diffs(avgdata).groupby(['subject', 'hemi']).mean().reset_index()
+        with sns.axes_style('white'):
+            ax1 = fig.add_subplot(gs[0, -1])
+            _, suppL, densL = pt.half_violinplot(y='difference', data=avgdiffs[avgdiffs['hemi']=='L'], color='.8', 
+                                                width=.3, inner=None, bw=.4, flip=False, CI=True, offset=0.04)
+            _, suppR, densR = pt.half_violinplot(y='difference', data=avgdiffs[avgdiffs['hemi']=='R'], color='.8', 
+                                                width=.3, inner=None, bw=.4, flip=True, CI=True, offset=0.04)
+            
+            densities_left = []
+            for d in avgdiffs[avgdiffs['hemi']=='L']['difference']:
+                ix, _ = find_nearest(suppL[0], d)
+                densities_left.append(densL[0][ix])
+            densities_left = np.array(densities_left).reshape(nsubjs,1)
+            scatter_left = -0.04-np.random.uniform(size=(nsubjs,1))*densities_left*0.15
+            plt.scatter(scatter_left, avgdiffs[avgdiffs['hemi']=='L']['difference'], color='black', alpha=.3)
+            densities_right = []
+            for d in avgdiffs[avgdiffs['hemi']=='R']['difference']:
+                ix, _ = find_nearest(suppR[0], d)
+                densities_right.append(densR[0][ix])
+            densities_right = np.array(densities_right).reshape(nsubjs,1)
+            scatter_right = 0.04+np.random.uniform(size=(nsubjs,1))*densities_right*0.15
+            plt.scatter(scatter_right, avgdiffs[avgdiffs['hemi']=='R']['difference'], color='black', alpha=.3)
+            
+            # Get mean and 95% CI:
+            meandiff = avgdiffs['difference'].mean()
+            tstats = pg.ttest(avgdiffs.groupby(['subject']).mean().reset_index()['difference'], 0.0)
+            ci95 = tstats['CI95%'][0]
+            #ax1.axis("equal")
+            #ax1.set_aspect('equal')
+            for tick in ax1.get_xticks():
+                #ax1.plot([tick-0.1, tick+0.1], [meandiff, meandiff],
+                #            lw=4, color='k')
+                ax1.plot([tick, tick], [ci95[0], ci95[1]], lw=3, color='k')
+                ax1.plot([tick-0.01, tick+0.01], [ci95[0], ci95[0]], lw=3, color='k')
+                ax1.plot([tick-0.01, tick+0.01], [ci95[1], ci95[1]], lw=3, color='k')
+                #circlemarker = plt.Circle((tick, meandiff), 0.015, color='k')
+                #ax1.add_patch(circlemarker)
+                ax1.plot(tick,meandiff, 'o', markersize=15, color='black')
+            ax1.axhline(0.0, linestyle='--', color='black')
+            plt.yticks(fontsize=20) 
+            ax1.set_xlabel('Average', fontsize=24)
+            ax1.set_ylabel('Δ Classifier information (a.u.)', fontsize=24)
+            ax1.set(ylim=(-0.4, 0.4))
+            ax1.axes_style = 'white'
+            ax1.spines['top'].set_visible(False)
+            ax1.spines['right'].set_visible(False)
+            ax1.spines['bottom'].set_visible(False)
+            #ax1.spines['left'].set_visible(False)
     plt.tight_layout()
     #plt.savefig('Plots/EVC_nvox_distance.pdf')
     plt.show()
