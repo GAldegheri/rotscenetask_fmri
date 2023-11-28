@@ -1,6 +1,6 @@
 import argparse
 
-def decode_FIR_timecourses(sub, roi, task, model, approach):
+def decode_FIR_timecourses(sub, roi, task, model, approach, sample_runs=None):
     """
     """
     import os
@@ -13,6 +13,8 @@ def decode_FIR_timecourses(sub, roi, task, model, approach):
     from mvpa.mvpa_utils import correct_labels
     from configs import project_dir, bids_dir
     from utils import Options, split_options
+    import random
+    random.seed(sub)
     
     opt = Options(
         sub=sub,
@@ -72,6 +74,14 @@ def decode_FIR_timecourses(sub, roi, task, model, approach):
                                 fir=True, max_delay=max_delay)
             testDS = correct_labels(testDS, test_opt)
             
+            if sample_runs is not None:
+                # randomly select 'sample_runs' runs
+                chosenruns = random.sample(range(1, testDS.chunks.max()+1), sample_runs)
+                testDS = testDS[np.isin(testDS.chunks, chosenruns)]
+            else:
+                chosenruns = None
+                
+            
             nanmask = np.logical_and(np.all(np.isfinite(trainDS.samples), axis=0), \
                 np.all(np.isfinite(testDS.samples), axis=0))
             trainDS = trainDS[:, nanmask]
@@ -107,14 +117,14 @@ def decode_FIR_timecourses(sub, roi, task, model, approach):
             allres['trainmodel'] = opt.model
             allres['testmodel'] = opt.model
         
-        return allres, sub, roi
+        return allres, sub, roi, chosenruns
     
     else:
-        return np.nan, sub, roi
+        return np.nan, sub, roi, chosenruns
 
 # ---------------------------------------------------------------------------------
 
-def correlate_timeseqs(tc, sub, roi):
+def correlate_timeseqs(tc, sub, roi, chosenruns):
     import pandas as pd
     import numpy as np
     import sys
@@ -126,9 +136,6 @@ def correlate_timeseqs(tc, sub, roi):
     
     
     n_timepoints = tc.delay.nunique()
-    print(pd.__version__)
-    print(tc.dtypes)
-    print(tc)
     tc = tc.groupby(['delay', 'expected']).mean().reset_index()
     
     
@@ -141,6 +148,10 @@ def correlate_timeseqs(tc, sub, roi):
     
     wholebrainDS = load_betas(univar_opt, mask_templ=None, 
                              fir=True)
+    
+    if chosenruns is not None:
+        wholebrainDS = wholebrainDS[np.isin(wholebrainDS.chunks, chosenruns)]
+        
     wholebrainDS = split_expunexp(wholebrainDS)
     nanmask = np.all(np.isfinite(wholebrainDS.samples), axis=0)
     wholebrainDS = wholebrainDS[:, nanmask]
@@ -150,7 +161,6 @@ def correlate_timeseqs(tc, sub, roi):
          'expected': list(wholebrainDS.sa.expected),
          'samples': list(wholebrainDS.samples)}
     )
-    print(univar_df.dtypes)
     univar_df = univar_df.groupby(['delay', 'expected']).mean().reset_index()
     
     # Get (n. voxels x n. timepoints) arrays for exp and unexp
@@ -181,23 +191,32 @@ def correlate_timeseqs(tc, sub, roi):
     unexp_map[i, j, k] = unexp_corrs.flatten()
     unexp_map = new_img_like('/project/3018040.05/anat_roi_masks/wholebrain.nii', unexp_map)
     
-    return exp_map, unexp_map, sub, roi
+    return exp_map, unexp_map, sub, roi, chosenruns
             
 # ---------------------------------------------------------------------------------
 
-def save_corrmaps(exp_map, unexp_map, sub, roi):
+def save_corrmaps(exp_map, unexp_map, sub, roi, chosenruns):
     import nibabel as nb
     import os
     
     outdir = os.path.join('/project/3018040.05/',
                           'FIR_correlations', 'test_m15', roi)
+    
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
     
+    filename = sub
+    if chosenruns is not None:
+        filename += '_runs'
+        for r in chosenruns:
+            filename += f'-{r}'
+    else:
+        filename += '_allruns'
+    
     nb.save(exp_map, os.path.join(outdir,
-                                f'{sub}_exp.nii'))
+                                filename+'_exp.nii'))
     nb.save(unexp_map, os.path.join(outdir,
-                                f'{sub}_unexp.nii'))
+                                filename+'_unexp.nii'))
     
     return    
 
@@ -209,13 +228,14 @@ def main(sub, roi):
     print('--------------------------------')
     
     print('Starting decoding...')
-    allres, sub, roi = decode_FIR_timecourses(sub, roi, 
+    allres, sub, roi, chosenruns = decode_FIR_timecourses(sub, roi, 
                                               ('train', 'test'),
-                                              (5, 15), 'traintest')
+                                              (5, 15), 'traintest',
+                                              sample_runs=None)
     print('Done! Computing correlations...')
-    exp_map, unexp_map, sub, roi = correlate_timeseqs(allres, sub, roi)
+    exp_map, unexp_map, sub, roi, chosenruns = correlate_timeseqs(allres, sub, roi, chosenruns)
     print('Done!')
-    save_corrmaps(exp_map, unexp_map, sub, roi)
+    save_corrmaps(exp_map, unexp_map, sub, roi, chosenruns)
     print('Saved files.')
     return
 

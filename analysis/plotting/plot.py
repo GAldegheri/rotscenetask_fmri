@@ -10,15 +10,18 @@ from mvpa.classify_models import isExpUnexp
 from utils import Options
 from mne.stats import permutation_cluster_1samp_test
 import plotting.PtitPrince as pt
+import os
 import ipdb
 
 
-def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False):
+def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False, saveimg=False):
     """
     - data: pandas dataframe containing the data
     - tfce_pvals are provided if they have been precomputed,
         else they're computed here
     """
+    if right_part:
+        assert 'hemi' in data.columns
     assert data.roi.nunique()==1
     
     avgdata = data.copy()
@@ -46,7 +49,7 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False)
         sns.lineplot(data=avgdata.groupby(['subject', 'nvoxels', 'expected']).mean().reset_index(), 
                      x='nvoxels', y=measure,
                      hue='expected', hue_order=[True, False], #linewidth=1,
-                     palette='Set2', ci=68, marker='o', mec='none', markersize=15) #plot_kws=dict(edgecolor="none")) #markersize=10
+                     palette='Set2', ci=68, marker='o', mec='none', markersize=10) #plot_kws=dict(edgecolor="none")) #markersize=10
         plt.yticks(fontsize=20)
         #ax0.set(ylim=(0.05, 0.35), xticks=['100']+[str(x) for x in np.arange(500, 3500, 500)])
         ax0.set(ylim=(0.0, 0.45), xticks=['100']+[str(x) for x in np.arange(500, maxvoxels+500, 500)])
@@ -60,10 +63,10 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False)
         ax0.spines['right'].set_visible(False)
         for x in np.arange(0, len(tfce_pvals)):
             if tfce_pvals[x] < 0.01:
-                ax0.scatter(x, 0.02, marker=(6, 2, 0), s=200, color='k', linewidths=1.)
-                ax0.scatter(x, 0.04, marker=(6, 2, 0), s=200, color='k', linewidths=1.)
+                ax0.scatter(x, 0.02, marker=(6, 2, 0), s=180, color='k', linewidths=1.)
+                ax0.scatter(x, 0.04, marker=(6, 2, 0), s=180, color='k', linewidths=1.)
             elif tfce_pvals[x] < 0.05:
-                ax0.scatter(x, 0.02, marker=(6, 2, 0), s=200, color='k', linewidths=1.)
+                ax0.scatter(x, 0.02, marker=(6, 2, 0), s=180, color='k', linewidths=1.)
     if right_part:
         avgdiffs = accs_to_diffs(avgdata).groupby(['subject', 'hemi']).mean().reset_index()
         with sns.axes_style('white'):
@@ -107,15 +110,16 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False)
             plt.yticks(fontsize=20) 
             ax1.set_xlabel('Average', fontsize=24)
             ax1.set_ylabel('Δ Classifier information (a.u.)', fontsize=24)
-            ax1.set(ylim=(-0.4, 0.4))
+            ax1.set(ylim=(-0.7, 0.7))
             ax1.axes_style = 'white'
             ax1.spines['top'].set_visible(False)
             ax1.spines['right'].set_visible(False)
             ax1.spines['bottom'].set_visible(False)
             #ax1.spines['left'].set_visible(False)
     plt.tight_layout()
-    #plt.savefig('Plots/EVC_nvox_distance.pdf')
-    plt.show()
+    # if saveimg:
+    #     plt.savefig('results_plots/EVC_nvox_distance.pdf')
+    #plt.show()
 
 def get_tfce_stats(data, measure='distance', n_perms=10000):
     subxvoxels = df_to_array_tfce(data.groupby(['subject','nvoxels','expected']).mean().reset_index(),
@@ -157,3 +161,92 @@ def find_nearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
     return idx, array[idx]
+
+
+# --------------------------------------------------------------------------------------
+# Behavioral plots
+# --------------------------------------------------------------------------------------
+
+def pretty_behav_plot(avgdata, measure='Hit', excl=True, fname=None, saveimg=False):
+    
+    assert(measure in ['Hit', 'DPrime', 'Criterion'])
+    
+    # Get all differences
+    alldiffs = []
+    for sub in avgdata.Subject.unique():
+        thisdiff = avgdata[(avgdata.Subject==sub)&(avgdata.Consistent==1)][measure].values[0] - \
+                   avgdata[(avgdata.Subject==sub)&(avgdata.Consistent==0)][measure].values[0]
+        alldiffs.append(thisdiff)
+    alldiffs = pd.DataFrame(alldiffs, columns=['difference'])
+    
+    fig = plt.figure(figsize=(10,10)) # (10, 8)
+    
+    ax0 = fig.add_subplot(121)
+    sns.barplot(x='Consistent', y=measure, data=avgdata, ci=68, order=[1.0, 0.0], 
+                palette='Set2', ax=ax0, errcolor='black', edgecolor='black', linewidth=2, capsize=.2)
+    if measure=='Hit':
+        ax0.set_ylabel('Accuracy', fontsize=30)
+    elif measure=='DPrime':
+        ax0.set_ylabel('d\'', fontsize=30)
+    elif measure=='Criterion':
+        ax0.set_ylabel('Criterion', fontsize=30)
+    plt.yticks(fontsize=24) 
+    ax0.tick_params(axis='y', direction='out', color='black', length=10, width=2)
+    ax0.tick_params(axis='x', length=0, pad=15)
+    ax0.set_xlabel(None)
+    ax0.set_xticklabels(['Cong.', 'Incong.'], fontsize=30)
+    ax0.spines['left'].set_linewidth(2)
+    ax0.spines['bottom'].set_linewidth(2)
+    ax0.spines['right'].set_visible(False)
+    ax0.spines['top'].set_visible(False)
+    if measure=='Hit':
+        ax0.set(ylim=(0.5, 0.75))
+    elif measure=='DPrime':
+        ax0.set(ylim=(0.0, 1.0))
+    elif measure=='Criterion':
+        ax0.set(ylim=(0.0, 1.0))
+    
+    ax1 = fig.add_subplot(122)
+    sns.violinplot(y='difference', data=alldiffs, color=".8", inner=None)
+    sns.stripplot(y='difference', data=alldiffs, jitter=0.07, ax=ax1, color='black', alpha=.5)
+    # Get mean and 95% CI:
+    meandiff = alldiffs['difference'].mean()
+    tstats = pg.ttest(alldiffs['difference'], 0.0)
+    ci95 = tstats['CI95%'][0]
+    for tick in ax1.get_xticks():
+        ax1.plot([tick-0.1, tick+0.1], [meandiff, meandiff],
+                    lw=4, color='k')
+        ax1.plot([tick, tick], [ci95[0], ci95[1]], lw=3, color='k')
+        ax1.plot([tick-0.03, tick+0.03], [ci95[0], ci95[0]], lw=3, color='k')
+        ax1.plot([tick-0.03, tick+0.03], [ci95[1], ci95[1]], lw=3, color='k')
+    ax1.axhline(0.0, linestyle='--', color='black')
+    plt.yticks(fontsize=24) 
+    if measure=='Hit':
+        ax1.set_ylabel('Δ Accuracy', fontsize=30)
+        if excl:
+            ax1.set(ylim=(-0.2, 0.4))
+        else:
+            ax1.set(ylim=(-0.3, 0.4))
+    elif measure=='DPrime':
+        ax1.set_ylabel('Δ d\'', fontsize=30)
+        ax1.set(ylim=(-2., 2.))
+    elif measure=='Criterion':
+        ax1.set_ylabel('Δ Criterion', fontsize=30)
+        ax1.set(ylim=(-1.0, 1.25))
+    ax1.axes_style = 'white'
+    ax1.tick_params(axis='y', direction='out', color='black', length=10, width=2)
+    ax1.tick_params(axis='x', length=0)
+    ax1.spines['left'].set_linewidth(2)
+    ax1.spines['bottom'].set_linewidth(2)
+    ax1.spines['right'].set_visible(False)
+    ax1.spines['bottom'].set_visible(False)
+    ax1.spines['top'].set_visible(False)
+    plt.tight_layout()
+    if not fname:
+        fname = f'behavior_{measure}.pdf'
+        if not excl:
+            fname.replace('.pdf', '_noexcl.pdf')
+    if saveimg:
+        if not os.path.isdir('results_plots'):
+            os.mkdir('results_plots')
+        plt.savefig(os.path.join('results_plots', fname))
