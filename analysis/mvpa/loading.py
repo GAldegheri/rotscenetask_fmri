@@ -368,6 +368,8 @@ def get_correct_model(opt):
         return 20
     elif opt.task=='test' and opt.model==24:
         return 23
+    elif opt.task=='test' and opt.model==29:
+        return 28
     elif opt.task=='train' and opt.model==5:
         return 4
     else:

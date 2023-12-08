@@ -50,13 +50,13 @@ def divide_in_thirds(DS):
 
 def split_views(DS, opt):
     
-    if (opt.task=='train' and opt.model==4) or (opt.task=='test' and opt.model in [12, 16, 20, 23]):
+    if (opt.task=='train' and opt.model==4) or (opt.task=='test' and opt.model in [12, 16, 20, 23, 28]):
        
         DS_A = DS[np.core.defchararray.find(DS.sa.targets,'A')!=-1]
         DS_B = DS[np.core.defchararray.find(DS.sa.targets,'B')!=-1]
         return (DS_A, DS_B)
     
-    elif (opt.task=='train' and opt.model==5) or (opt.task=='test' and opt.model in [15, 17, 21, 24]):
+    elif (opt.task=='train' and opt.model==5) or (opt.task=='test' and opt.model in [15, 17, 21, 24, 29]):
         
         DS_30 = DS[np.core.defchararray.find(DS.sa.targets,'30')!=-1]
         DS_90 = DS[np.core.defchararray.find(DS.sa.targets,'90')!=-1]

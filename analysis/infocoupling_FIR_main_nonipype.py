@@ -143,7 +143,7 @@ def correlate_timeseqs(tc, sub, roi, chosenruns):
     univar_opt = Options(
         sub=sub, 
         task='test',
-        model=27
+        model=30
     )
     
     wholebrainDS = load_betas(univar_opt, mask_templ=None, 
@@ -200,7 +200,7 @@ def save_corrmaps(exp_map, unexp_map, sub, roi, chosenruns):
     import os
     
     outdir = os.path.join('/project/3018040.05/',
-                          'FIR_correlations', 'test_m15', roi)
+                          'FIR_correlations', 'test_m24', roi)
     
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
@@ -230,8 +230,8 @@ def main(sub, roi):
     print('Starting decoding...')
     allres, sub, roi, chosenruns = decode_FIR_timecourses(sub, roi, 
                                               ('train', 'test'),
-                                              (5, 15), 'traintest',
-                                              sample_runs=None)
+                                              (5, 29), 'traintest',
+                                              sample_runs=5)
     print('Done! Computing correlations...')
     exp_map, unexp_map, sub, roi, chosenruns = correlate_timeseqs(allres, sub, roi, chosenruns)
     print('Done!')

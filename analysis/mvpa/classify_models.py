@@ -19,7 +19,8 @@ def isExpUnexp(opt):
     # which tasks/models should be split into 
     # expected and unexpected
     
-    if opt.task=='test' and opt.model in [5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 19, 20, 21, 22, 23, 24]:
+    if opt.task=='test' and opt.model in [5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 19, 
+                                          20, 21, 22, 23, 24, 28, 29, 30]:
         return True
     else:
         return False
@@ -30,7 +31,8 @@ def DivideInThirds(opt):
     # Should this task/model be
     # divided in thirds?
     
-    if opt.task=='test' and opt.model in [7, 9, 11, 12, 13, 15, 19, 20, 21, 22, 23, 24]:
+    if opt.task=='test' and opt.model in [7, 9, 11, 12, 13, 15, 19, 20, 21, 22, 
+                                          23, 24, 28, 29, 30]:
         return True
     else:
         return False
@@ -60,7 +62,8 @@ def isAllViews(opt):
     # Which tasks/models contain both object view (A/B)
     # and scene rotation (30/90).
     
-    if (opt.task=='train' and opt.model in [4, 5]) or (opt.task=='test' and opt.model in [12, 15, 16, 17, 20, 21, 23, 24]):
+    if (opt.task=='train' and opt.model in [4, 5]) or (opt.task=='test' and opt.model in [12, 15, 16, 17, 20, 21, 23, 24,
+                                                                                          28, 29]):
         return True
     else:
         return False

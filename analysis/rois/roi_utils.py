@@ -218,18 +218,18 @@ def reslice_spm(in_file, out_file=None):
         os.rename(reslicedfile, out_file)
     
 if __name__=="__main__":
-    roidir = '/project/3018040.05/anat_roi_masks'
+    # roidir = '/project/3018040.05/anat_roi_masks'
     
-    ba = 9
+    # ba = 9
     
-    roimap = create_brodmann_roi(ba)
-    roimap_L, roimap_R = split_hemispheres(roimap)
-    nb.save(roimap_L, os.path.join(roidir, f'ba-{ba:g}_L.nii'))
-    nb.save(roimap_R, os.path.join(roidir, f'ba-{ba:g}_R.nii'))
-    nb.save(roimap, os.path.join(roidir, f'ba-{ba:g}.nii'))
-    # nvoxels = np.arange(100, 6100, 100)
-    # allsubjs = [f'sub-{i:03d}' for i in range(1, 36)]
+    # roimap = create_brodmann_roi(ba)
+    # roimap_L, roimap_R = split_hemispheres(roimap)
+    # nb.save(roimap_L, os.path.join(roidir, f'ba-{ba:g}_L.nii'))
+    # nb.save(roimap_R, os.path.join(roidir, f'ba-{ba:g}_R.nii'))
+    # nb.save(roimap, os.path.join(roidir, f'ba-{ba:g}.nii'))
+    nvoxels = np.arange(100, 6100, 100)
+    allsubjs = [f'sub-{i:03d}' for i in range(1, 36)]
     
-    # for s in tqdm(allsubjs):
-    #     create_functional_roi(s, 'ba-19-37', nvoxels=nvoxels,
-    #                           split_lr=True, tthresh=float('-inf'))
+    for s in tqdm(allsubjs):
+        create_functional_roi(s, 'ba-17-18', nvoxels=nvoxels,
+                              split_lr=False, tthresh=float('-inf'))
