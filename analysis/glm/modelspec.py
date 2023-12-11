@@ -1108,7 +1108,8 @@ def specify_model_test(eventsfile, model, behav):
     elif model==28:
         
         subjid = re.search(r"sub-\d+", eventsfile).group(0)
-        random.seed(subjid)
+        runno = re.search(r"run-\d+", eventsfile).group(0)
+        random.seed(subjid+runno)
         
         # events: 7 (first probe)
         conditions = ['A_30_exp_1', 'A_30_exp_2', 'A_30_exp_3', 'A_30_unexp',
@@ -1202,7 +1203,8 @@ def specify_model_test(eventsfile, model, behav):
     elif model==30:
         
         subjid = re.search(r"sub-\d+", eventsfile).group(0)
-        random.seed(subjid)
+        runno = re.search(r"run-\d+", eventsfile).group(0)
+        random.seed(subjid+runno)
         
         # events: 7 (first probe)
         conditions = ['expected_1', 'expected_2', 'expected_3', 'unexpected']

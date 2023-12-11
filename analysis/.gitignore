@@ -4,6 +4,7 @@ crash-*.pklz
 *.nipype
 *.csv
 *.nii
+pyscript*.m
 infocoupling/TR_timecourses/
 infocoupling/FIR_timecourses/
 workflow_graphs/

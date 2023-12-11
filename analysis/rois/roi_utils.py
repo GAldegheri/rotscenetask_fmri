@@ -3,12 +3,16 @@ from nilearn.image import new_img_like
 import numpy as np
 import sys
 sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis/')
-from configs import project_dir, bids_dir
+from configs import project_dir, bids_dir, matlab_cmd, spm_dir
 import os
 import copy
+from nipype.interfaces.matlab import MatlabCommand
+MatlabCommand.set_default_matlab_cmd(matlab_cmd)
+MatlabCommand.set_default_paths(spm_dir)
 from nipype.interfaces.spm.utils import Reslice
 from collections.abc import Iterable
 from tqdm import tqdm
+import ipdb
 
 # Useful models/contrasts in functional localizer:
 # - Model 1, contrast 1: object vs. scrambled
@@ -180,6 +184,17 @@ def create_brodmann_roi(ba_number):
     
     return ba_img
 
+def create_glasser_roi(roi_number):
+    if not isinstance(roi_number, list):
+        roi_number = [roi_number]
+        
+    vol = nb.load(os.path.join(roidir, 'glasser_atlas.nii'))
+    vol_data = vol.get_fdata()
+    
+    glasser_img = new_img_like(vol, np.isin(vol_data, roi_number))
+    
+    return glasser_img
+
 
 def split_hemispheres(vol):
     
@@ -213,12 +228,18 @@ def reslice_spm(in_file, out_file=None):
     
     # Replace original file unless otherwise specified
     if out_file is None:
-        os.rename(reslicedfile, in_file) 
+        os.rename(reslicedfile.outputs.out_file, in_file) 
     else:
-        os.rename(reslicedfile, out_file)
+        os.rename(reslicedfile.outputs.out_file, out_file)
     
 if __name__=="__main__":
-    # roidir = '/project/3018040.05/anat_roi_masks'
+    
+    
+    roimap = create_glasser_roi([23])
+    roimap_L, roimap_R = split_hemispheres(roimap)
+    nb.save(roimap_L, os.path.join(roidir, 'glasser-v5_L.nii'))
+    nb.save(roimap_R, os.path.join(roidir, 'glasser-v5_R.nii'))
+    nb.save(roimap, os.path.join(roidir, 'glasser-v5.nii'))
     
     # ba = 9
     
@@ -227,9 +248,9 @@ if __name__=="__main__":
     # nb.save(roimap_L, os.path.join(roidir, f'ba-{ba:g}_L.nii'))
     # nb.save(roimap_R, os.path.join(roidir, f'ba-{ba:g}_R.nii'))
     # nb.save(roimap, os.path.join(roidir, f'ba-{ba:g}.nii'))
-    nvoxels = np.arange(100, 6100, 100)
-    allsubjs = [f'sub-{i:03d}' for i in range(1, 36)]
+    # nvoxels = np.arange(100, 6100, 100)
+    # allsubjs = [f'sub-{i:03d}' for i in range(1, 36)]
     
-    for s in tqdm(allsubjs):
-        create_functional_roi(s, 'ba-17-18', nvoxels=nvoxels,
-                              split_lr=False, tthresh=float('-inf'))
+    # for s in tqdm(allsubjs):
+    #     create_functional_roi(s, 'ba-17-18', nvoxels=nvoxels,
+    #                           split_lr=False, tthresh=float('-inf'))

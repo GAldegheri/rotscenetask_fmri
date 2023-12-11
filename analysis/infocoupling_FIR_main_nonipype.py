@@ -200,7 +200,7 @@ def save_corrmaps(exp_map, unexp_map, sub, roi, chosenruns):
     import os
     
     outdir = os.path.join('/project/3018040.05/',
-                          'FIR_correlations', 'test_m24', roi)
+                          'FIR_correlations', 'test_m29', roi)
     
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
@@ -231,7 +231,7 @@ def main(sub, roi):
     allres, sub, roi, chosenruns = decode_FIR_timecourses(sub, roi, 
                                               ('train', 'test'),
                                               (5, 29), 'traintest',
-                                              sample_runs=5)
+                                              sample_runs=None)
     print('Done! Computing correlations...')
     exp_map, unexp_map, sub, roi, chosenruns = correlate_timeseqs(allres, sub, roi, chosenruns)
     print('Done!')
