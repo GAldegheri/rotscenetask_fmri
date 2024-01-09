@@ -3,12 +3,29 @@ import numpy as np
 import os
 import sys
 sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis/')
-from mvpa.loading import load_betas
+from mvpa.loading import load_betas, get_correct_model
 from mvpa.mvpa_utils import correct_labels
-from utils import Options
+from utils import Options, loadmat
 from configs import project_dir, bids_dir
 from readresults.readres_mvpa import parse_roi_info
 import argparse
+
+def load_labeled_contrasts(subj_list):
+    """
+    'opt' should contain sub, task, model
+    """
+    contr_dir = bids_dir+'derivatives/spm-preproc/derivatives/spm-stats/contrasts/'
+    datamodel = get_correct_model(opt)
+    data_dir = os.path.join(contr_dir, f'{opt.sub}/{opt.task}/model_{datamodel:g}/')
+    
+    SPM = loadmat(os.path.join(data_dir, 'SPM.mat'))
+    regr_names = [n[6:-6] if '*bf(1)' in n else n[6:] for n in SPM['SPM']['xX']['name']]
+    file_names = [os.path.join(data_dir, b.fname) for b in SPM['SPM']['Vbeta']]
+    
+    exclude = ['buttonpress', 'constant', 'tx', 'ty', 'tz', 'rx', 'ry', 'rz']
+    
+    file_names = [f for f, r in zip(file_names, regr_names) if r not in exclude]
+    regr_names = [r for r in regr_names if r not in exclude]
 
 def load_univar_by_voxelno(sub, roi_templ, task, model, voxelnos):
     """
@@ -20,9 +37,7 @@ def load_univar_by_voxelno(sub, roi_templ, task, model, voxelnos):
             alldata.append(load_univariate(sub, roi_templ.format(h, vn),
                                            task, model))
     alldata = parse_roi_info(pd.concat(alldata))
-    return alldata
-            
-            
+    return alldata            
     
 
 def load_univariate(sub, roi, task, model):

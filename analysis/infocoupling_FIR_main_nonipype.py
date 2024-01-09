@@ -231,7 +231,7 @@ def main(sub, roi):
     allres, sub, roi, chosenruns = decode_FIR_timecourses(sub, roi, 
                                               ('train', 'test'),
                                               (5, 29), 'traintest',
-                                              sample_runs=None)
+                                              sample_runs=5)
     print('Done! Computing correlations...')
     exp_map, unexp_map, sub, roi, chosenruns = correlate_timeseqs(allres, sub, roi, chosenruns)
     print('Done!')

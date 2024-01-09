@@ -136,7 +136,7 @@ def contrastspecify(spm_mat_file):
     
 def main():
     
-    use_FIR = True
+    use_FIR = False
     
     # Utilities
     
@@ -182,7 +182,7 @@ def main():
                             function=modelspecify), name='spec_model')
 
     spec_model.itersource = ('get_events', 'task')
-    spec_model.iterables = [('model', {'test': [28, 30]})]
+    spec_model.iterables = [('model', {'test': [30]})]
     
     add_motion_reg = Node(Function(input_names=['subj_info', 'task', 'use_motion_reg', 'motpar'],
                                output_names=['subj_info'],
@@ -256,7 +256,7 @@ def main():
                                             ('spm_mat_file', 'betas.@a'),
                                             ('residual_image', 'betas.@b')])]
 
-    docontrasts = False
+    docontrasts = True
     if docontrasts:
         tobeconnected += [(modelest, spec_contrast, [('spm_mat_file', 'spm_mat_file')]),
                         (modelest, contrest, [('spm_mat_file', 'spm_mat_file')]),

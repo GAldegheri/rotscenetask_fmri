@@ -39,7 +39,9 @@ def load_betas(opt, mask_templ=None,
         regr_names = [n[6:] for n in SPM['SPM']['xX']['name']]
     else:
         regr_names = [n[6:-6] if '*bf(1)' in n else n[6:] for n in SPM['SPM']['xX']['name']]
+    
     file_names = [os.path.join(data_dir, b.fname) for b in SPM['SPM']['Vbeta']]
+    
     
     exclude = ['buttonpress', 'constant', 'tx', 'ty', 'tz', 'rx', 'ry', 'rz']
     chunk_count = {}
