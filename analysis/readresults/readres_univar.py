@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
+from glob import glob
 import sys
 sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis/')
 from mvpa.loading import load_betas, get_correct_model
@@ -10,22 +11,16 @@ from configs import project_dir, bids_dir
 from readresults.readres_mvpa import parse_roi_info
 import argparse
 
-def load_labeled_contrasts(subj_list):
-    """
-    'opt' should contain sub, task, model
-    """
-    contr_dir = bids_dir+'derivatives/spm-preproc/derivatives/spm-stats/contrasts/'
-    datamodel = get_correct_model(opt)
-    data_dir = os.path.join(contr_dir, f'{opt.sub}/{opt.task}/model_{datamodel:g}/')
-    
-    SPM = loadmat(os.path.join(data_dir, 'SPM.mat'))
-    regr_names = [n[6:-6] if '*bf(1)' in n else n[6:] for n in SPM['SPM']['xX']['name']]
-    file_names = [os.path.join(data_dir, b.fname) for b in SPM['SPM']['Vbeta']]
-    
-    exclude = ['buttonpress', 'constant', 'tx', 'ty', 'tz', 'rx', 'ry', 'rz']
-    
-    file_names = [f for f, r in zip(file_names, regr_names) if r not in exclude]
-    regr_names = [r for r in regr_names if r not in exclude]
+
+def get_contrast_files(subjlist, task, model, contrast, base_dir=bids_dir):
+    contr_dir = os.path.join(bids_dir, 'derivatives', 'spm-preproc',
+                             'derivatives', 'spm-stats', 'contrasts')
+    contrastfiles = []
+    for s in subjlist:
+        contrastfiles.append(os.path.join(contr_dir, s, task, f'model_{model}',
+                                          f'con_{contrast:04d}.nii'))
+    return contrastfiles
+
 
 def load_univar_by_voxelno(sub, roi_templ, task, model, voxelnos):
     """

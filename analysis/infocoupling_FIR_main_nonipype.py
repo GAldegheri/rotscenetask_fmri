@@ -106,6 +106,8 @@ def decode_FIR_timecourses(sub, roi, task, model, approach, sample_runs=None):
         allres['subject'] = opt.sub
         allres['roi'] = opt.roi
         allres['approach'] = approach
+        allres['chosenruns'] = ''.join((str(c)+',' if i != len(chosenruns)-1 else 
+                                        str(c) for i, c in enumerate(chosenruns)))
         if approach == 'traintest':
             allres['traintask'] = train_opt.task
             allres['testtask'] = test_opt.task
@@ -121,6 +123,18 @@ def decode_FIR_timecourses(sub, roi, task, model, approach, sample_runs=None):
     
     else:
         return np.nan, sub, roi, chosenruns
+
+# ---------------------------------------------------------------------------------
+
+def save_timeseqs(tc, sub, roi):
+    import os
+    outdir = os.path.join('/project/3018040.05/',
+                          'FIR_timeseries', 'test_m29')
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir)
+    tc.to_csv(os.path.join(outdir, f'{sub}_{roi}.csv'), index=False)
+    
+    return
 
 # ---------------------------------------------------------------------------------
 
@@ -219,6 +233,71 @@ def save_corrmaps(exp_map, unexp_map, sub, roi, chosenruns):
                                 filename+'_unexp.nii'))
     
     return    
+
+# ---------------------------------------------------------------------------------
+
+def granger_timeseqs(tc, sub, roi, chosenruns, src_roi):
+    import pandas as pd
+    import numpy as np
+    from statsmodels.tsa.stattools import grangercausalitytests
+    import sys
+    sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis/')
+    from mvpa.loading import load_betas
+    from mvpa.mvpa_utils import split_expunexp
+    from utils import Options
+    
+    tc = tc.groupby(['delay', 'expected']).mean().reset_index()
+    
+    univar_opt = Options(
+        sub=sub,
+        task='test',
+        model=30
+    )
+    
+    sourceDS = load_betas(univar_opt, mask_templ=src_roi)
+    
+    if chosenruns is not None:
+        sourceDS = sourceDS[np.isin(sourceDS.chunks, chosenruns)]
+
+    sourceDS = split_expunexp(sourceDS)
+    nanmask = np.all(np.isfinite(sourceDS.samples), axis=0)
+    sourceDS = sourceDS[:, nanmask]
+    
+    univar_df = pd.DataFrame(
+        {'delay': list(sourceDS.sa.delay),
+         'expected': list(sourceDS.sa.expected),
+         'samples': list(sourceDS.samples)}
+    )
+    univar_df = univar_df.groupby(['delay', 'expected']).mean().reset_index()
+    
+    # Compute Granger causality tests:
+    uv_ts_exp = np.mean(np.vstack(univar_df[univar_df.expected==True]['samples']), axis=1)
+    uv_ts_unexp = np.mean(np.vstack(univar_df[univar_df.expected==False]['samples']), axis=1)
+    mv_ts_exp = np.vstack(tc[tc.expected==True].distance)
+    mv_ts_unexp = np.vstack(tc[tc.expected==False].distance)
+    
+    # "Feedback" univariate --> multivariate
+    ts_uv2mv_exp = np.hstack([uv_ts_exp, mv_ts_exp])
+    ts_uv2mv_unexp = np.hstack([uv_ts_unexp, mv_ts_unexp])
+    
+    gc_uv2mv_exp = grangercausalitytests(ts_uv2mv_exp, 1, verbose=False)
+    gc_uv2mv_unexp = grangercausalitytests(ts_uv2mv_unexp, 1, verbose=False)
+    
+    # "Feedforward" multivariate --> univariate
+    ts_mv2uv_exp = np.hstack([mv_ts_exp, uv_ts_exp])
+    ts_mv2uv_unexp = np.hstack([mv_ts_unexp, uv_ts_unexp])
+    
+    gc_mv2uv_exp = grangercausalitytests(ts_mv2uv_exp, 1, verbose=False)
+    gc_mv2uv_unexp = grangercausalitytests(ts_mv2uv_unexp, 1, verbose=False)
+    
+    # Compute F-statistic difference between feedback and feedforward
+    f_diff_exp = gc_uv2mv_exp[1][0]['ssr_ftest'][0] - gc_mv2uv_exp[1][0]['ssr_ftest'][0]
+    f_diff_unexp = gc_uv2mv_unexp[1][0]['ssr_ftest'][0] - gc_mv2uv_unexp[1][0]['ssr_ftest'][0]
+
+# ---------------------------------------------------------------------------------
+
+def concat_and_save_fdiffs(f_diff_exp, f_diff_unexp):
+    return
 
 # ---------------------------------------------------------------------------------
 

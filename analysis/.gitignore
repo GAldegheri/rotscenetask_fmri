@@ -9,3 +9,4 @@ infocoupling/TR_timecourses/
 infocoupling/FIR_timecourses/
 workflow_graphs/
 torque/jobs/
+results_plots/univar_maps/
