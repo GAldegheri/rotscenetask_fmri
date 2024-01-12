@@ -1,9 +1,36 @@
 import argparse
+import os
+from configs import project_dir, bids_dir
 
-def decode_FIR_timecourses(sub, roi, task, model, approach, sample_runs=None):
+def get_roi_path(roi):
+    if 'contr' in roi: # functional contrast
+        roi_basedir = os.path.join(bids_dir, 'derivatives', 'spm-preproc', 
+                                   'derivatives', 'roi-masks')
+        mask_templ = os.path.join(roi_basedir, '{:s}/{:s}_' + roi + '.nii')
+    else: # only anatomical map
+        roi_basedir = os.path.join(project_dir, 'anat_roi_masks')
+        mask_templ = os.path.join(roi_basedir, roi + '.nii')
+    
+    return mask_templ
+
+# ---------------------------------------------------------------------------------
+
+def pick_runs(n_samples, max_run, sub, negative=False):
+    import random
+    random.seed(sub)
+    
+    # randomly select 'sample_runs' runs
+    chosenruns = random.sample(range(1, max_run+1), n_samples)
+    if negative:
+        chosenruns = [r for r in range(1, max_run+1) if r not in chosenruns]
+    
+    return chosenruns
+
+# ---------------------------------------------------------------------------------
+
+def decode_FIR_timecourses(sub, roi, task, model, approach, sample_runs=None, test_runs=False):
     """
     """
-    import os
     import numpy as np
     import pandas as pd
     import sys
@@ -11,7 +38,6 @@ def decode_FIR_timecourses(sub, roi, task, model, approach, sample_runs=None):
     from mvpa.loading import load_betas
     from mvpa.decoding import decode_CV, decode_traintest
     from mvpa.mvpa_utils import correct_labels
-    from configs import project_dir, bids_dir
     from utils import Options, split_options
     import random
     random.seed(sub)
@@ -23,13 +49,7 @@ def decode_FIR_timecourses(sub, roi, task, model, approach, sample_runs=None):
         model=model
     )
     
-    if 'contr' in opt.roi: # functional contrast
-        roi_basedir = os.path.join(bids_dir, 'derivatives', 'spm-preproc', 
-                                   'derivatives', 'roi-masks')
-        mask_templ = os.path.join(roi_basedir, '{:s}/{:s}_' + opt.roi + '.nii')
-    else: # only anatomical map
-        roi_basedir = os.path.join(project_dir, 'anat_roi_masks')
-        mask_templ = os.path.join(roi_basedir, opt.roi + '.nii')
+    mask_templ = get_roi_path(opt.roi)
         
     max_delay = 9
     
@@ -76,7 +96,7 @@ def decode_FIR_timecourses(sub, roi, task, model, approach, sample_runs=None):
             
             if sample_runs is not None:
                 # randomly select 'sample_runs' runs
-                chosenruns = random.sample(range(1, testDS.chunks.max()+1), sample_runs)
+                chosenruns = pick_runs(sample_runs, testDS.chunks.max(), sub, negative=test_runs)
                 testDS = testDS[np.isin(testDS.chunks, chosenruns)]
             else:
                 chosenruns = None
@@ -126,55 +146,98 @@ def decode_FIR_timecourses(sub, roi, task, model, approach, sample_runs=None):
 
 # ---------------------------------------------------------------------------------
 
-def save_timeseqs(tc, sub, roi):
+def save_timeseqs(tc, sub, roi, chosenruns=None):
     import os
     outdir = os.path.join('/project/3018040.05/',
-                          'FIR_timeseries', 'test_m29')
+                          'FIR_timeseries', 'decoding',
+                          'test_m29')
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
-    tc.to_csv(os.path.join(outdir, f'{sub}_{roi}.csv'), index=False)
+        
+    filename = f'{sub}_{roi}'
+    if chosenruns is not None:
+        filename += '_runs'
+        for r in chosenruns:
+            filename += f'-{r}'
+    else:
+        filename += '_allruns'
+    filename += '.csv'
+       
+    tc.to_csv(os.path.join(outdir, filename), index=False)
     
     return
 
 # ---------------------------------------------------------------------------------
 
-def correlate_timeseqs(tc, sub, roi, chosenruns):
+def load_univar_ts(sub, task, model, src_roi=None):
     import pandas as pd
     import numpy as np
+    import os
     import sys
     sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis/')
     from mvpa.loading import load_betas
     from mvpa.mvpa_utils import split_expunexp
     from utils import Options
+    
+    if src_roi is not None:
+        mask_templ = get_roi_path(src_roi)
+    else:
+        mask_templ = src_roi
+    
+    univar_opt = Options(
+        sub=sub, 
+        task=task,
+        model=model
+    )
+    
+    univarDS = load_betas(univar_opt, mask_templ=mask_templ,
+                          fir=True)
+    
+    univarDS = split_expunexp(univarDS)
+    nanmask = np.all(np.isfinite(univarDS.samples), axis=0)
+    univarDS = univarDS[:, nanmask]
+    
+    univar_df = pd.DataFrame(
+        {'delay': list(univarDS.sa.delay),
+         'expected': list(univarDS.sa.expected),
+         'samples': list(univarDS.samples),
+         'run': list(univarDS.chunks)}
+    )
+    univar_df['subject'] = sub
+    
+    return univar_df, univarDS
+
+# ---------------------------------------------------------------------------------
+
+def save_univar_ts(univar_df, sub, roi):
+    import os
+    outdir = os.path.join('/project/3018040.05/',
+                          'FIR_timeseries', 'univariate',
+                          'test_m30')
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir)
+    univar_df.to_pickle(os.path.join(outdir, f'{sub}_{roi}.pkl'))
+    
+    return
+
+# ---------------------------------------------------------------------------------
+
+def correlate_timeseqs(tc, sub, roi, sample_runs=None, test_runs=False):
+    import numpy as np
+    import sys
+    sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis/')
     from nilearn.image import new_img_like
     
     
     n_timepoints = tc.delay.nunique()
     tc = tc.groupby(['delay', 'expected']).mean().reset_index()
     
+    univar_df, wholebrainDS = load_univar_ts(sub, 'test', 30, chosenruns, src_roi=None)
     
-    # load FIR timecourses
-    univar_opt = Options(
-        sub=sub, 
-        task='test',
-        model=30
-    )
+    if sample_runs is not None:
+        chosenruns = pick_runs(sample_runs, univar_df.run.max(), sub, negative=test_runs)
+        univar_df = univar_df[univar_df['run'].isin(chosenruns)]
     
-    wholebrainDS = load_betas(univar_opt, mask_templ=None, 
-                             fir=True)
-    
-    if chosenruns is not None:
-        wholebrainDS = wholebrainDS[np.isin(wholebrainDS.chunks, chosenruns)]
-        
-    wholebrainDS = split_expunexp(wholebrainDS)
-    nanmask = np.all(np.isfinite(wholebrainDS.samples), axis=0)
-    wholebrainDS = wholebrainDS[:, nanmask]
-    
-    univar_df = pd.DataFrame(
-        {'delay': list(wholebrainDS.sa.delay),
-         'expected': list(wholebrainDS.sa.expected),
-         'samples': list(wholebrainDS.samples)}
-    )
     univar_df = univar_df.groupby(['delay', 'expected']).mean().reset_index()
     
     # Get (n. voxels x n. timepoints) arrays for exp and unexp
@@ -237,38 +300,14 @@ def save_corrmaps(exp_map, unexp_map, sub, roi, chosenruns):
 # ---------------------------------------------------------------------------------
 
 def granger_timeseqs(tc, sub, roi, chosenruns, src_roi):
-    import pandas as pd
     import numpy as np
     from statsmodels.tsa.stattools import grangercausalitytests
     import sys
     sys.path.append('/project/3018040.05/rotscenetask_fmri/analysis/')
-    from mvpa.loading import load_betas
-    from mvpa.mvpa_utils import split_expunexp
-    from utils import Options
     
     tc = tc.groupby(['delay', 'expected']).mean().reset_index()
     
-    univar_opt = Options(
-        sub=sub,
-        task='test',
-        model=30
-    )
-    
-    sourceDS = load_betas(univar_opt, mask_templ=src_roi)
-    
-    if chosenruns is not None:
-        sourceDS = sourceDS[np.isin(sourceDS.chunks, chosenruns)]
-
-    sourceDS = split_expunexp(sourceDS)
-    nanmask = np.all(np.isfinite(sourceDS.samples), axis=0)
-    sourceDS = sourceDS[:, nanmask]
-    
-    univar_df = pd.DataFrame(
-        {'delay': list(sourceDS.sa.delay),
-         'expected': list(sourceDS.sa.expected),
-         'samples': list(sourceDS.samples)}
-    )
-    univar_df = univar_df.groupby(['delay', 'expected']).mean().reset_index()
+    univar_df, _ = load_univar_ts(sub, 'test', 30, chosenruns, src_roi=src_roi)
     
     # Compute Granger causality tests:
     uv_ts_exp = np.mean(np.vstack(univar_df[univar_df.expected==True]['samples']), axis=1)
@@ -296,11 +335,6 @@ def granger_timeseqs(tc, sub, roi, chosenruns, src_roi):
 
 # ---------------------------------------------------------------------------------
 
-def concat_and_save_fdiffs(f_diff_exp, f_diff_unexp):
-    return
-
-# ---------------------------------------------------------------------------------
-
 def main(sub, roi):
     print('--------------------------------')
     print(f'Subject: {sub}, ROI: {roi}')
@@ -310,12 +344,19 @@ def main(sub, roi):
     allres, sub, roi, chosenruns = decode_FIR_timecourses(sub, roi, 
                                               ('train', 'test'),
                                               (5, 29), 'traintest',
-                                              sample_runs=5)
-    print('Done! Computing correlations...')
-    exp_map, unexp_map, sub, roi, chosenruns = correlate_timeseqs(allres, sub, roi, chosenruns)
-    print('Done!')
-    save_corrmaps(exp_map, unexp_map, sub, roi, chosenruns)
-    print('Saved files.')
+                                              sample_runs=5, test_runs=True)
+    print('Done! Saving timeseries files...')
+    save_timeseqs(allres, sub, roi, chosenruns=chosenruns)
+    print('Saved multivariate timeseries files.')
+    print('Loading univariate sequences...')
+    univar_df, _ = load_univar_ts(sub, 'test', 30, src_roi='glasser-v5_R')
+    save_univar_ts(univar_df, sub, roi)
+    print('Saved univariate timeseries files.')
+    # print('Done! Computing correlations...')
+    # exp_map, unexp_map, sub, roi, chosenruns = correlate_timeseqs(allres, sub, roi, chosenruns)
+    # print('Done!')
+    # save_corrmaps(exp_map, unexp_map, sub, roi, chosenruns)
+    # print('Saved correlation map files.')
     return
 
 # ---------------------------------------------------------------------------------
