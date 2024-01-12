@@ -204,6 +204,9 @@ def load_univar_ts(sub, task, model, src_roi=None):
          'run': list(univarDS.chunks)}
     )
     univar_df['subject'] = sub
+    univar_df['roi'] = src_roi
+    univar_df['task'] = task
+    univar_df['model'] = model
     
     return univar_df, univarDS
 
