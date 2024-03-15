@@ -126,8 +126,11 @@ def decode_FIR_timecourses(sub, roi, task, model, approach, sample_runs=None, te
         allres['subject'] = opt.sub
         allres['roi'] = opt.roi
         allres['approach'] = approach
-        allres['chosenruns'] = ''.join((str(c)+',' if i != len(chosenruns)-1 else 
-                                        str(c) for i, c in enumerate(chosenruns)))
+        if chosenruns is not None:
+            allres['chosenruns'] = ''.join((str(c)+',' if i != len(chosenruns)-1 else 
+                                            str(c) for i, c in enumerate(chosenruns)))
+        else:
+            allres['chosenruns'] = 'all'
         if approach == 'traintest':
             allres['traintask'] = train_opt.task
             allres['testtask'] = test_opt.task
@@ -347,14 +350,14 @@ def main(sub, roi):
     allres, sub, roi, chosenruns = decode_FIR_timecourses(sub, roi, 
                                               ('train', 'test'),
                                               (5, 29), 'traintest',
-                                              sample_runs=5, test_runs=True)
+                                              sample_runs=None, test_runs=False)
     print('Done! Saving timeseries files...')
     save_timeseqs(allres, sub, roi, chosenruns=chosenruns)
     print('Saved multivariate timeseries files.')
-    print('Loading univariate sequences...')
-    univar_df, _ = load_univar_ts(sub, 'test', 30, src_roi='glasser-v5_R')
-    save_univar_ts(univar_df, sub, roi)
-    print('Saved univariate timeseries files.')
+    # print('Loading univariate sequences...')
+    # univar_df, _ = load_univar_ts(sub, 'test', 30, src_roi='glasser-v5_R')
+    # save_univar_ts(univar_df, sub, 'glasser-v5_R')
+    # print('Saved univariate timeseries files.')
     # print('Done! Computing correlations...')
     # exp_map, unexp_map, sub, roi, chosenruns = correlate_timeseqs(allres, sub, roi, chosenruns)
     # print('Done!')

@@ -198,7 +198,7 @@ def main():
     subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
     #subjlist = ['sub-001']
     
-    rois_to_use = ['ba-19-37_{:s}_contr-objscrvsbas']
+    rois_to_use = ['ba-17-18_{:s}_contr-objscrvsbas']
     nothresh = True
     
     roilist = []
@@ -248,7 +248,7 @@ def main():
         else:
             roilist.append(r + '_allsignif')
 
-    full_rois = ['ba-17-18_{:s}', 'ba-19-37_{:s}']
+    full_rois = ['ba-17-18_{:s}']
     
     for r in full_rois:
         if '{:s}' in r:
@@ -282,7 +282,7 @@ def main():
     decodingnode.iterables = [('dataformat', ['betas']*2),
                               ('approach', ['traintest']*2),
                               ('task', [('train', 'test'), ('test', 'train')]),
-                              ('model', [(5, 15), (15, 5)])]
+                              ('model', [(5, 29), (29, 5)])]
     decodingnode.synchronize = True
     
     # Gather results
@@ -299,7 +299,7 @@ def main():
                       name='savingnode', overwrite=True)
     
     # --------------------------------------
-    savingnode.inputs.out_file = 'results_main_nothresh_1937_m15.csv'
+    savingnode.inputs.out_file = 'results_main_nothresh_1718_m29.csv'
     print('Output file:', savingnode.inputs.out_file)
     # --------------------------------------
     

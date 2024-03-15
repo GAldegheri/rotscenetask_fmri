@@ -141,7 +141,8 @@ def main():
     # Utilities
     
     # Identity interface
-    subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
+    #subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
+    subjlist = ['sub-001']
     
     subjinfo = Node(IdentityInterface(fields=['sub']), name='subjinfo')
     subjinfo.iterables = [('sub', subjlist)]
@@ -182,7 +183,7 @@ def main():
                             function=modelspecify), name='spec_model')
 
     spec_model.itersource = ('get_events', 'task')
-    spec_model.iterables = [('model', {'test': [30]})]
+    spec_model.iterables = [('model', {'test': [28]})]
     
     add_motion_reg = Node(Function(input_names=['subj_info', 'task', 'use_motion_reg', 'motpar'],
                                output_names=['subj_info'],
@@ -256,7 +257,7 @@ def main():
                                             ('spm_mat_file', 'betas.@a'),
                                             ('residual_image', 'betas.@b')])]
 
-    docontrasts = True
+    docontrasts = False
     if docontrasts:
         tobeconnected += [(modelest, spec_contrast, [('spm_mat_file', 'spm_mat_file')]),
                         (modelest, contrest, [('spm_mat_file', 'spm_mat_file')]),
