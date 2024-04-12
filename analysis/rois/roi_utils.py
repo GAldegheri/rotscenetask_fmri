@@ -235,11 +235,11 @@ def reslice_spm(in_file, out_file=None):
 if __name__=="__main__":
     
     
-    roimap = create_glasser_roi([23])
+    roimap = create_glasser_roi([3])
     roimap_L, roimap_R = split_hemispheres(roimap)
-    nb.save(roimap_L, os.path.join(roidir, 'glasser-v5_L.nii'))
-    nb.save(roimap_R, os.path.join(roidir, 'glasser-v5_R.nii'))
-    nb.save(roimap, os.path.join(roidir, 'glasser-v5.nii'))
+    nb.save(roimap_L, os.path.join(roidir, 'glasser-v6_L.nii'))
+    nb.save(roimap_R, os.path.join(roidir, 'glasser-v6_R.nii'))
+    nb.save(roimap, os.path.join(roidir, 'glasser-v6.nii'))
     
     # ba = 9
     

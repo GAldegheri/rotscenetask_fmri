@@ -141,8 +141,8 @@ def main():
     # Utilities
     
     # Identity interface
-    #subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
-    subjlist = ['sub-001']
+    subjlist = [f'sub-{i:03d}' for i in range(3, 36)]
+    #subjlist = ['sub-002']
     
     subjinfo = Node(IdentityInterface(fields=['sub']), name='subjinfo')
     subjinfo.iterables = [('sub', subjlist)]
@@ -173,7 +173,7 @@ def main():
     datasink = Node(nio.DataSink(parameterization=True), name='datasink')
     datasink.inputs.base_directory = '/project/3018040.05/bids/derivatives/spm-preproc/derivatives/spm-stats'
     subs = [('_sub_', ''), ('_task_', ''), ('_model', 'model'), 
-            ('_use_motion', 'use_motion'), #('_bases_hrfderivs', ''),
+            ('_use_motion', 'use_motion'), ('_bases_hrfderivs0.0', ''),
             ('_bases_firlength20.order10', 'FIR')]
     datasink.inputs.substitutions = subs 
     
