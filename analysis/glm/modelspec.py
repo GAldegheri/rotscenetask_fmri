@@ -1224,6 +1224,101 @@ def specify_model_test(eventsfile, model, behav):
         onsets.append(list(unexptrials[unexptrials['event_no']==7].onset))
         for o in onsets:
             durations.append([0] * len(o))
+            
+    elif model==31:
+        
+        subjid = re.search(r"sub-\d+", eventsfile).group(0)
+        runno = re.search(r"run-\d+", eventsfile).group(0)
+        random.seed((subjid+runno)*2)
+        
+        # events: 7 (first probe)
+        conditions = ['A_30_exp_1', 'A_30_exp_2', 'A_30_exp_3', 'A_30_unexp',
+                      'A_90_exp_1', 'A_90_exp_2', 'A_90_exp_3', 'A_90_unexp', 
+                      'B_30_exp_1', 'B_30_exp_2', 'B_30_exp_3', 'B_30_unexp',
+                      'B_90_exp_1', 'B_90_exp_2', 'B_90_exp_3', 'B_90_unexp']
+        A30mask = ((behav['InitView']==1) & (behav['FinalView']==30))
+        A90mask = ((behav['InitView']==1) & (behav['FinalView']==90))
+        B30mask = ((behav['InitView']==2) & (behav['FinalView']==30))
+        B90mask = ((behav['InitView']==2) & (behav['FinalView']==90))
+        
+        A30_E_indx = behav.index[(behav['Consistent']==1) & A30mask]
+        A90_E_indx = behav.index[(behav['Consistent']==1) & A90mask]
+        B30_E_indx = behav.index[(behav['Consistent']==1) & B30mask]
+        B90_E_indx = behav.index[(behav['Consistent']==1) & B90mask]
+        
+        # the unexpected ones NEED TO BE SWAPPED:
+        # (unexpected stimulus came from the other initial viewpoint)
+        A30_U_indx = behav.index[(behav['Consistent']==0) & B30mask]
+        A90_U_indx = behav.index[(behav['Consistent']==0) & B90mask]
+        B30_U_indx = behav.index[(behav['Consistent']==0) & A30mask]
+        B90_U_indx = behav.index[(behav['Consistent']==0) & A90mask]
+        
+        # ---------------------------------
+        A30_E_trials = events[events['trial_no'].isin(A30_E_indx)]
+        A30_E_trialnos = list(A30_E_trials.trial_no.unique())
+        A30_E_trialnos = random.sample(A30_E_trialnos, len(A30_E_trialnos))
+        A30_E_trials_1 = events[events['trial_no'].isin(A30_E_trialnos[:3])]
+        A30_E_trials_2 = events[events['trial_no'].isin(A30_E_trialnos[3:6])]
+        A30_E_trials_3 = events[events['trial_no'].isin(A30_E_trialnos[6:9])]
+        # ---------------------------------
+        A90_E_trials = events[events['trial_no'].isin(A90_E_indx)]
+        A90_E_trialnos = list(A90_E_trials.trial_no.unique())
+        A90_E_trialnos = random.sample(A90_E_trialnos, len(A90_E_trialnos))
+        A90_E_trials_1 = events[events['trial_no'].isin(A90_E_trialnos[:3])]
+        A90_E_trials_2 = events[events['trial_no'].isin(A90_E_trialnos[3:6])]
+        A90_E_trials_3 = events[events['trial_no'].isin(A90_E_trialnos[6:9])]
+        # ---------------------------------
+        B30_E_trials = events[events['trial_no'].isin(B30_E_indx)]
+        B30_E_trialnos = list(B30_E_trials.trial_no.unique())
+        B30_E_trialnos = random.sample(B30_E_trialnos, len(B30_E_trialnos))
+        B30_E_trials_1 = events[events['trial_no'].isin(B30_E_trialnos[:3])]
+        B30_E_trials_2 = events[events['trial_no'].isin(B30_E_trialnos[3:6])]
+        B30_E_trials_3 = events[events['trial_no'].isin(B30_E_trialnos[6:9])]
+        # ---------------------------------
+        B90_E_trials = events[events['trial_no'].isin(B90_E_indx)]
+        B90_E_trialnos = list(B90_E_trials.trial_no.unique())
+        B90_E_trialnos = random.sample(B90_E_trialnos, len(B90_E_trialnos))
+        B90_E_trials_1 = events[events['trial_no'].isin(B90_E_trialnos[:3])]
+        B90_E_trials_2 = events[events['trial_no'].isin(B90_E_trialnos[3:6])]
+        B90_E_trials_3 = events[events['trial_no'].isin(B90_E_trialnos[6:9])]
+        # ---------------------------------
+        
+        A30_U_trials = events[events['trial_no'].isin(A30_U_indx)]
+        A90_U_trials = events[events['trial_no'].isin(A90_U_indx)]
+        B30_U_trials = events[events['trial_no'].isin(B30_U_indx)]
+        B90_U_trials = events[events['trial_no'].isin(B90_U_indx)]
+        
+        # Add to onsets and durations:
+        
+        onsets.append(list(A30_E_trials_1[A30_E_trials_1['event_no']==7].onset))
+        onsets.append(list(A30_E_trials_2[A30_E_trials_2['event_no']==7].onset))
+        onsets.append(list(A30_E_trials_3[A30_E_trials_3['event_no']==7].onset))
+        
+        onsets.append(list(A30_U_trials[A30_U_trials['event_no']==7].onset))
+        
+        onsets.append(list(A90_E_trials_1[A90_E_trials_1['event_no']==7].onset))
+        onsets.append(list(A90_E_trials_2[A90_E_trials_2['event_no']==7].onset))
+        onsets.append(list(A90_E_trials_3[A90_E_trials_3['event_no']==7].onset))
+        
+        onsets.append(list(A90_U_trials[A90_U_trials['event_no']==7].onset))
+        
+        onsets.append(list(B30_E_trials_1[B30_E_trials_1['event_no']==7].onset))
+        onsets.append(list(B30_E_trials_2[B30_E_trials_2['event_no']==7].onset))
+        onsets.append(list(B30_E_trials_3[B30_E_trials_3['event_no']==7].onset))
+        
+        onsets.append(list(B30_U_trials[B30_U_trials['event_no']==7].onset))
+        
+        onsets.append(list(B90_E_trials_1[B90_E_trials_1['event_no']==7].onset))
+        onsets.append(list(B90_E_trials_2[B90_E_trials_2['event_no']==7].onset))
+        onsets.append(list(B90_E_trials_3[B90_E_trials_3['event_no']==7].onset))
+        
+        onsets.append(list(B90_U_trials[B90_U_trials['event_no']==7].onset))
+        
+        conditions = [c for i, c in enumerate(conditions) if onsets[i]!=[]]
+        onsets = [o for o in onsets if o != []]
+        
+        for o in onsets:
+            durations.append([0] * len(o))
         
             
     else:

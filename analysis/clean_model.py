@@ -4,7 +4,7 @@ import shutil
 def main(task, model):
     betadir = '../../bids/derivatives/spm-preproc/derivatives/spm-stats/betas/'
     contrdir = '../../bids/derivatives/spm-preproc/derivatives/spm-stats/contrasts/'
-    fir = True
+    fir = False
     contrasts = False
     subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
     for s in subjlist:
@@ -25,5 +25,5 @@ def main(task, model):
                 print(thisbetadir, 'not found.')
                 
 if __name__=="__main__":
-    main('test', 30)
+    main('test', 11)
         

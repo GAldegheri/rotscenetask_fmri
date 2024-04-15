@@ -141,7 +141,7 @@ def main():
     # Utilities
     
     # Identity interface
-    subjlist = [f'sub-{i:03d}' for i in range(3, 36)]
+    subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
     #subjlist = ['sub-002']
     
     subjinfo = Node(IdentityInterface(fields=['sub']), name='subjinfo')
@@ -183,7 +183,7 @@ def main():
                             function=modelspecify), name='spec_model')
 
     spec_model.itersource = ('get_events', 'task')
-    spec_model.iterables = [('model', {'test': [28]})]
+    spec_model.iterables = [('model', {'test': [31]})]
     
     add_motion_reg = Node(Function(input_names=['subj_info', 'task', 'use_motion_reg', 'motpar'],
                                output_names=['subj_info'],

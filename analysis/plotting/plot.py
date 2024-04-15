@@ -37,7 +37,7 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False,
     
     if tfce_pvals is None:
         _, _, tfce_pvals, _ = get_tfce_stats(avgdata.groupby(['subject','nvoxels','expected']).mean().reset_index(),
-                                             measure=measure, n_perms=1000)
+                                             measure=measure, n_perms=10000)
             
     fig = plt.figure(figsize=(20,10))
     gs = GridSpec(1, 4, figure=fig)
