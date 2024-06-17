@@ -81,7 +81,7 @@ if __name__=="__main__":
     parser.add_argument('--sub', required=True, type=str, help="Subject")
     args = parser.parse_args()
     
-    roi = 'ba-17-18_{:s}_contr-objscrvsbas_top-{:g}_nothresh'
+    roi = 'ba-19-37_{:s}_contr-objscrvsbas_top-{:g}_nothresh'
     voxelnos = np.arange(100, 6100, 100)
     univar_df = load_univar_by_voxelno(args.sub, roi, 'test', 5, voxelnos)
-    univar_df.to_csv(f'/project/3018040.05/Univar_results/test_m5/{args.sub}.csv', index=False)
+    univar_df.to_csv(f'/project/3018040.05/Univar_results/test_m5/{args.sub}_ba-19-37.csv', index=False)

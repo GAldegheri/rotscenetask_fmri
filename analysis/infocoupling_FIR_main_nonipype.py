@@ -238,11 +238,14 @@ def correlate_timeseqs(tc, sub, roi, sample_runs=None, test_runs=False):
     n_timepoints = tc.delay.nunique()
     tc = tc.groupby(['delay', 'expected']).mean().reset_index()
     
-    univar_df, wholebrainDS = load_univar_ts(sub, 'test', 30, chosenruns, src_roi=None)
+    # 9 instead of 30
+    univar_df, wholebrainDS = load_univar_ts(sub, 'test', 9, src_roi=None)
     
     if sample_runs is not None:
         chosenruns = pick_runs(sample_runs, univar_df.run.max(), sub, negative=test_runs)
         univar_df = univar_df[univar_df['run'].isin(chosenruns)]
+    else:
+        chosenruns = None
     
     univar_df = univar_df.groupby(['delay', 'expected']).mean().reset_index()
     
@@ -283,7 +286,7 @@ def save_corrmaps(exp_map, unexp_map, sub, roi, chosenruns):
     import os
     
     outdir = os.path.join('/project/3018040.05/',
-                          'FIR_correlations', 'test_m29', roi)
+                          'FIR_correlations', 'test_m29_train_m9', roi)
     
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
@@ -351,32 +354,34 @@ def main(sub, roi):
                                               ('train', 'test'),
                                               (5, 29), 'traintest',
                                               sample_runs=None, test_runs=False)
-    print('Done! Saving timeseries files...')
-    save_timeseqs(allres, sub, roi, chosenruns=chosenruns)
-    print('Saved multivariate timeseries files.')
+    # print('Done! Saving timeseries files...')
+    # save_timeseqs(allres, sub, roi, chosenruns=chosenruns)
+    # print('Saved multivariate timeseries files.')
     # print('Loading univariate sequences...')
-    # univar_df, _ = load_univar_ts(sub, 'test', 30, src_roi='glasser-v5_R')
+    # univar_df, _ = load_univar_ts(sub, 'test', 9)
     # save_univar_ts(univar_df, sub, 'glasser-v5_R')
     # print('Saved univariate timeseries files.')
     # print('Done! Computing correlations...')
-    # exp_map, unexp_map, sub, roi, chosenruns = correlate_timeseqs(allres, sub, roi, chosenruns)
-    # print('Done!')
-    # save_corrmaps(exp_map, unexp_map, sub, roi, chosenruns)
-    # print('Saved correlation map files.')
+    exp_map, unexp_map, sub, roi, chosenruns = correlate_timeseqs(allres, sub, roi)
+    print('Done!')
+    save_corrmaps(exp_map, unexp_map, sub, roi, chosenruns)
+    print('Saved correlation map files.')
+    
     return
 
 # ---------------------------------------------------------------------------------
 
 if __name__=="__main__":
     # Create the parser
-    parser = argparse.ArgumentParser()
+    # parser = argparse.ArgumentParser()
 
-    # Add arguments
-    parser.add_argument("--sub", required=True, type=str, help="Subject")
-    parser.add_argument("--roi", required=True, type=str, help="ROI")
+    # # Add arguments
+    # parser.add_argument("--sub", required=True, type=str, help="Subject")
+    # parser.add_argument("--roi", required=True, type=str, help="ROI")
 
-    # Parse arguments
-    args = parser.parse_args()
+    # # Parse arguments
+    # args = parser.parse_args()
 
     # Call the main function with the args namespace
-    main(args.sub, args.roi)
+    #main(args.sub, args.roi)
+    main('sub-001', 'ba-17-18_contr-objscrvsbas_top-500_nothresh')
