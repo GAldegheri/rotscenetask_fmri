@@ -1319,6 +1319,31 @@ def specify_model_test(eventsfile, model, behav):
         
         for o in onsets:
             durations.append([0] * len(o))
+            
+    elif model == 32:
+        
+        subjid = re.search(r"sub-\d+", eventsfile).group(0)
+        runno = re.search(r"run-\d+", eventsfile).group(0)
+        random.seed((subjid+runno)*2)
+        
+        # events: 7 (first probe)
+        conditions = ['expected_1', 'expected_2', 'expected_3', 'unexpected']
+        expindx = behav.index[behav['Consistent']==1]
+        exptrials = events[events['trial_no'].isin(expindx)]
+        unexptrials = events[~events['trial_no'].isin(expindx)]
+        
+        exp_trialnos = list(exptrials.trial_no.unique())
+        exp_trialnos = random.sample(exp_trialnos, len(exp_trialnos))
+        exp_trials_1 = events[events['trial_no'].isin(exp_trialnos[:12])]
+        exp_trials_2 = events[events['trial_no'].isin(exp_trialnos[12:24])]
+        exp_trials_3 = events[events['trial_no'].isin(exp_trialnos[24:36])]
+        
+        onsets.append(list(exp_trials_1[exp_trials_1['event_no']==7].onset))
+        onsets.append(list(exp_trials_2[exp_trials_2['event_no']==7].onset))
+        onsets.append(list(exp_trials_3[exp_trials_3['event_no']==7].onset))
+        onsets.append(list(unexptrials[unexptrials['event_no']==7].onset))
+        for o in onsets:
+            durations.append([0] * len(o))
         
             
     else:

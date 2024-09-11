@@ -22,7 +22,9 @@ def quick_get_results(res_list, combine_thirds=True):
     return results
 
 def exclude_participants(results):
-    res = results[results['subject']!='sub-006']
+    to_exclude = [1, 6, 12, 18, 28]
+    to_exclude = [f'sub-{s:03d}' for s in to_exclude]
+    res = results[~results['subject'].isin(to_exclude)]
     return res
     
 def merge_results(res_list):

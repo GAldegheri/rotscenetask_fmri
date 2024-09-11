@@ -198,7 +198,7 @@ def main():
     subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
     #subjlist = ['sub-001']
     
-    rois_to_use = ['ba-19-37_{:s}_contr-objscrvsbas']
+    rois_to_use = ['ba-17-18_{:s}_contr-objscrvsbas']
     nothresh = True
     
     roilist = []
@@ -248,7 +248,7 @@ def main():
         else:
             roilist.append(r + '_allsignif')
 
-    full_rois = ['ba-19-37_{:s}']
+    full_rois = ['ba-17-18_{:s}']
     
     for r in full_rois:
         if '{:s}' in r:
@@ -282,7 +282,7 @@ def main():
     decodingnode.iterables = [('dataformat', ['betas']*2),
                               ('approach', ['traintest']*2),
                               ('task', [('train', 'test'), ('test', 'train')]),
-                              ('model', [(5, 29), (29, 5)])]
+                              ('model', [(3, 7), (7, 3)])]
     decodingnode.synchronize = True
     
     # Gather results
@@ -299,7 +299,7 @@ def main():
                       name='savingnode', overwrite=True)
     
     # --------------------------------------
-    savingnode.inputs.out_file = 'results_main_nothresh_1937_m29.csv'
+    savingnode.inputs.out_file = 'results_main_nothresh_1718_m7.csv'
     print('***********************************')
     print('Output file:', savingnode.inputs.out_file)
     print('***********************************')
@@ -325,9 +325,9 @@ def main():
             'log_to_file': False}
     
     # Run workflow
-    MVPA_wf.run()
-    #MVPA_wf.run('PBS', plugin_args={'max_jobs' : 300, 'qsub_args': '-l walltime=02:00:00,mem=16g', 
-    #                               'max_tries':3,'retry_timeout': 5, 'max_jobname_len': 15})
+    #MVPA_wf.run()
+    MVPA_wf.run('PBS', plugin_args={'max_jobs' : 300, 'qsub_args': '-l walltime=02:00:00,mem=16g', 
+                                   'max_tries':3,'retry_timeout': 5, 'max_jobname_len': 15})
 
 # ---------------------------------------------------------------------------------
     

@@ -4,6 +4,8 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
+from matplotlib.font_manager import FontProperties
+from pathlib import Path
 import sys
 sys.path.append('..')
 from mvpa.classify_models import isExpUnexp
@@ -14,12 +16,15 @@ import os
 import ipdb
 
 
-def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False, saveimg=False):
+def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False, n_perms=10000):
     """
     - data: pandas dataframe containing the data
     - tfce_pvals are provided if they have been precomputed,
         else they're computed here
     """
+    fpath = Path("./fonts/HelveticaWorld-Regular.ttf")
+    fontprop = FontProperties(fname=fpath)
+    
     if right_part:
         assert 'hemi' in data.columns
     assert data.roi.nunique()==1
@@ -37,40 +42,43 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False,
     
     if tfce_pvals is None:
         _, _, tfce_pvals, _ = get_tfce_stats(avgdata.groupby(['subject','nvoxels','expected']).mean().reset_index(),
-                                             measure=measure, n_perms=10000)
+                                             measure=measure, n_perms=n_perms)
             
     fig = plt.figure(figsize=(20,10))
-    gs = GridSpec(1, 4, figure=fig)
+    gs = GridSpec(4, 4, figure=fig, height_ratios=[1, 4, 4, 1])
     with sns.axes_style('white'):
         if right_part:
-            ax0 = fig.add_subplot(gs[0, :-1])
+            ax0 = fig.add_subplot(gs[1:3, 1:])
         else:
-            ax0 = fig.add_subplot(gs[0, :])
+            ax0 = fig.add_subplot(gs[1:3, :])
         sns.lineplot(data=avgdata.groupby(['subject', 'nvoxels', 'expected']).mean().reset_index(), 
                      x='nvoxels', y=measure,
                      hue='expected', hue_order=[True, False], #linewidth=1,
-                     palette='Set2', ci=68, marker='o', mec='none', markersize=10) #plot_kws=dict(edgecolor="none")) #markersize=10
-        plt.yticks(fontsize=20)
+                     palette='Dark2', ci=68, marker='o', mec='none', markersize=10) #plot_kws=dict(edgecolor="none")) #markersize=10
+        plt.yticks(font=fpath, fontsize=28, ticks=list(np.arange(0., 0.45, 0.1)))
         #ax0.set(ylim=(0.05, 0.35), xticks=['100']+[str(x) for x in np.arange(500, 3500, 500)])
-        ax0.set(ylim=(0.0, 0.45), xticks=['100']+[str(x) for x in np.arange(500, maxvoxels+500, 500)])
-        ax0.set_xlabel('Number of Voxels', fontsize=24)
-        ax0.set_ylabel('Classifier information (a.u.)', fontsize=24)
-        plt.xticks(fontsize=20)
+        ax0.set(ylim=(0.0, 0.45), xticks=['100', '500']+[str(x) for x in np.arange(1000, maxvoxels+1000, 1000)])
+        ax0.set_xlabel('Number of Voxels', font=fpath, fontsize=32)
+        ax0.set_ylabel('Classifier Information (a.u.)', font=fpath, fontsize=32)
+        plt.xticks(font=fpath, fontsize=28)
         plt.margins(0.02)
         ax0.legend_.set_title(None)
-        ax0.legend(['Congruent', 'Incongruent'], prop={'size': 26}, frameon=False)
+        fontprop.set_size(28)
+        ax0.legend(['Congruent', 'Incongruent'], prop=fontprop, frameon=False)
         ax0.spines['top'].set_visible(False)
         ax0.spines['right'].set_visible(False)
+        ax0.spines['left'].set_linewidth(2)
+        ax0.spines['bottom'].set_linewidth(2)
         for x in np.arange(0, len(tfce_pvals)):
             if tfce_pvals[x] < 0.01:
-                ax0.scatter(x, 0.02, marker=(6, 2, 0), s=180, color='k', linewidths=1.)
-                ax0.scatter(x, 0.04, marker=(6, 2, 0), s=180, color='k', linewidths=1.)
+                ax0.scatter(x, 0.02, marker=(6, 2, 0), s=180, color='k', linewidths=2.)
+                ax0.scatter(x, 0.04, marker=(6, 2, 0), s=180, color='k', linewidths=2.)
             elif tfce_pvals[x] < 0.05:
-                ax0.scatter(x, 0.02, marker=(6, 2, 0), s=180, color='k', linewidths=1.)
+                ax0.scatter(x, 0.02, marker=(6, 2, 0), s=180, color='k', linewidths=2.)
     if right_part:
         avgdiffs = accs_to_diffs(avgdata).groupby(['subject', 'hemi']).mean().reset_index()
         with sns.axes_style('white'):
-            ax1 = fig.add_subplot(gs[0, -1])
+            ax1 = fig.add_subplot(gs[:, 0])
             _, suppL, densL = pt.half_violinplot(y='difference', data=avgdiffs[avgdiffs['hemi']=='L'], color='.8', 
                                                 width=.3, inner=None, bw=.4, flip=False, CI=True, offset=0.04)
             _, suppR, densR = pt.half_violinplot(y='difference', data=avgdiffs[avgdiffs['hemi']=='R'], color='.8', 
@@ -106,16 +114,17 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False,
                 #circlemarker = plt.Circle((tick, meandiff), 0.015, color='k')
                 #ax1.add_patch(circlemarker)
                 ax1.plot(tick,meandiff, 'o', markersize=15, color='black')
-            ax1.axhline(0.0, linestyle='--', color='black')
-            plt.yticks(fontsize=20) 
-            ax1.set_xlabel('Average', fontsize=24)
-            ax1.set_ylabel('Δ Classifier information (a.u.)', fontsize=24)
+            ax1.axhline(0.0, linestyle='--', color='black', linewidth=2)
+            plt.yticks(font=fpath, fontsize=32) 
+            ax1.set_xlabel('Average', font=fpath, fontsize=32)
+            ax1.set_ylabel('Δ Classifier information (a.u.)', font=fpath, fontsize=32)
             ax1.set(ylim=(-0.7, 0.7))
             ax1.axes_style = 'white'
             ax1.spines['top'].set_visible(False)
             ax1.spines['right'].set_visible(False)
             ax1.spines['bottom'].set_visible(False)
-            #ax1.spines['left'].set_visible(False)
+            ax1.spines['left'].set_linewidth(2)
+    plt.subplots_adjust(wspace=0.4)
     plt.tight_layout()
     # if saveimg:
     #     plt.savefig('results_plots/EVC_nvox_distance.pdf')
@@ -171,6 +180,8 @@ def pretty_behav_plot(avgdata, measure='Hit', excl=True, fname=None, saveimg=Fal
     
     assert(measure in ['Hit', 'DPrime', 'Criterion'])
     
+    fpath = Path("./fonts/HelveticaWorld-Regular.ttf")
+    
     # Get all differences
     alldiffs = []
     for sub in avgdata.Subject.unique():
@@ -185,16 +196,16 @@ def pretty_behav_plot(avgdata, measure='Hit', excl=True, fname=None, saveimg=Fal
     sns.barplot(x='Consistent', y=measure, data=avgdata, ci=68, order=[1.0, 0.0], 
                 palette='Set2', ax=ax0, errcolor='black', edgecolor='black', linewidth=2, capsize=.2)
     if measure=='Hit':
-        ax0.set_ylabel('Accuracy', fontsize=30)
+        ax0.set_ylabel('Accuracy', font=fpath, fontsize=30)
     elif measure=='DPrime':
-        ax0.set_ylabel('d\'', fontsize=30)
+        ax0.set_ylabel('d\'', font=fpath, fontsize=30)
     elif measure=='Criterion':
-        ax0.set_ylabel('Criterion', fontsize=30)
+        ax0.set_ylabel('Criterion', font=fpath, fontsize=30)
     plt.yticks(fontsize=24) 
     ax0.tick_params(axis='y', direction='out', color='black', length=10, width=2)
     ax0.tick_params(axis='x', length=0, pad=15)
     ax0.set_xlabel(None)
-    ax0.set_xticklabels(['Cong.', 'Incong.'], fontsize=30)
+    ax0.set_xticklabels(['Cong.', 'Incong.'], font=fpath, fontsize=30)
     ax0.spines['left'].set_linewidth(2)
     ax0.spines['bottom'].set_linewidth(2)
     ax0.spines['right'].set_visible(False)
@@ -222,16 +233,16 @@ def pretty_behav_plot(avgdata, measure='Hit', excl=True, fname=None, saveimg=Fal
     ax1.axhline(0.0, linestyle='--', color='black')
     plt.yticks(fontsize=24) 
     if measure=='Hit':
-        ax1.set_ylabel('Δ Accuracy', fontsize=30)
+        ax1.set_ylabel('Δ Accuracy', font=fpath, fontsize=30)
         if excl:
             ax1.set(ylim=(-0.2, 0.4))
         else:
             ax1.set(ylim=(-0.3, 0.4))
     elif measure=='DPrime':
-        ax1.set_ylabel('Δ d\'', fontsize=30)
+        ax1.set_ylabel('Δ d\'', font=fpath, fontsize=30)
         ax1.set(ylim=(-2., 2.))
     elif measure=='Criterion':
-        ax1.set_ylabel('Δ Criterion', fontsize=30)
+        ax1.set_ylabel('Δ Criterion', font=fpath, fontsize=30)
         ax1.set(ylim=(-1.0, 1.25))
     ax1.axes_style = 'white'
     ax1.tick_params(axis='y', direction='out', color='black', length=10, width=2)
@@ -243,9 +254,9 @@ def pretty_behav_plot(avgdata, measure='Hit', excl=True, fname=None, saveimg=Fal
     ax1.spines['top'].set_visible(False)
     plt.tight_layout()
     if not fname:
-        fname = f'behavior_{measure}.pdf'
+        fname = f'behavior_{measure}.svg'
         if not excl:
-            fname.replace('.pdf', '_noexcl.pdf')
+            fname.replace('.pdf', '_noexcl.svg')
     if saveimg:
         if not os.path.isdir('results_plots'):
             os.mkdir('results_plots')

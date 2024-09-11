@@ -153,7 +153,7 @@ def save_timeseqs(tc, sub, roi, chosenruns=None):
     import os
     outdir = os.path.join('/project/3018040.05/',
                           'FIR_timeseries', 'decoding',
-                          'test_m29')
+                          'test_m31')
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
         
@@ -354,11 +354,11 @@ def main(sub, roi):
                                               ('train', 'test'),
                                               (5, 29), 'traintest',
                                               sample_runs=None, test_runs=False)
-    # print('Done! Saving timeseries files...')
-    # save_timeseqs(allres, sub, roi, chosenruns=chosenruns)
-    # print('Saved multivariate timeseries files.')
-    # print('Loading univariate sequences...')
-    # univar_df, _ = load_univar_ts(sub, 'test', 9)
+    print('Done! Saving timeseries files...')
+    save_timeseqs(allres, sub, roi, chosenruns=chosenruns)
+    print('Saved multivariate timeseries files.')
+    print('Loading univariate sequences...')
+    univar_df, _ = load_univar_ts(sub, 'test', 9)
     # save_univar_ts(univar_df, sub, 'glasser-v5_R')
     # print('Saved univariate timeseries files.')
     # print('Done! Computing correlations...')

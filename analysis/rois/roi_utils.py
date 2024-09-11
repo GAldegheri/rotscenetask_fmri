@@ -104,7 +104,7 @@ def create_functional_roi(sub, roiname, nvoxels='all',
     contr_data[brodmann_mask==0] = 0
     contr_vol = new_img_like(contr_vol, contr_data)
     
-    if not (isinstance(nvoxels, str) and nvoxels == 'all'):
+    if not nvoxels == 'all':
         if split_lr:
             contr_L, contr_R = split_hemispheres(contr_vol)
             top_voxels = [(cl, cr) for cl, cr in zip(
@@ -235,11 +235,11 @@ def reslice_spm(in_file, out_file=None):
 if __name__=="__main__":
     
     
-    roimap = create_glasser_roi([3])
-    roimap_L, roimap_R = split_hemispheres(roimap)
-    nb.save(roimap_L, os.path.join(roidir, 'glasser-v6_L.nii'))
-    nb.save(roimap_R, os.path.join(roidir, 'glasser-v6_R.nii'))
-    nb.save(roimap, os.path.join(roidir, 'glasser-v6.nii'))
+    # roimap = create_glasser_roi([3])
+    # roimap_L, roimap_R = split_hemispheres(roimap)
+    # nb.save(roimap_L, os.path.join(roidir, 'glasser-v6_L.nii'))
+    # nb.save(roimap_R, os.path.join(roidir, 'glasser-v6_R.nii'))
+    # nb.save(roimap, os.path.join(roidir, 'glasser-v6.nii'))
     
     # ba = 9
     
@@ -248,9 +248,9 @@ if __name__=="__main__":
     # nb.save(roimap_L, os.path.join(roidir, f'ba-{ba:g}_L.nii'))
     # nb.save(roimap_R, os.path.join(roidir, f'ba-{ba:g}_R.nii'))
     # nb.save(roimap, os.path.join(roidir, f'ba-{ba:g}.nii'))
-    # nvoxels = np.arange(100, 6100, 100)
-    # allsubjs = [f'sub-{i:03d}' for i in range(1, 36)]
+    nvoxels = np.arange(100, 3100, 100)
+    allsubjs = [f'sub-{i:03d}' for i in range(1, 36)]
     
-    # for s in tqdm(allsubjs):
-    #     create_functional_roi(s, 'ba-17-18', nvoxels=nvoxels,
-    #                           split_lr=False, tthresh=float('-inf'))
+    for s in tqdm(allsubjs):
+        create_functional_roi(s, 'ba-19-37', nvoxels=nvoxels,
+                              split_lr=True, tthresh=float('-inf'))
