@@ -195,8 +195,8 @@ def main():
      
     # Subject and ROI list
     
-    subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
-    #subjlist = ['sub-001']
+    #subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
+    subjlist = ['sub-001']
     
     rois_to_use = ['ba-17-18_{:s}_contr-objscrvsbas']
     nothresh = True
@@ -258,6 +258,7 @@ def main():
             roilist.append(r)
     
     #roilist = ['ba-17-18_L_contr-objscrvsbas_top-1000', 'ba-17-18_R_contr-objscrvsbas_top-1000']
+    roilist = ['ba-17-18_L_contr-objscrvsbas_top-1500_nothresh']
     
     print('------------------- ROI list: -------------------')
     print(roilist)
@@ -279,10 +280,15 @@ def main():
     #                                     ('train', 'test'), ('test', 'train')]),
     #                           ('model', [(5, 15), (15, 5),
     #                                      (5, 24), (24, 5)])]
-    decodingnode.iterables = [('dataformat', ['betas']*2),
-                              ('approach', ['traintest']*2),
-                              ('task', [('train', 'test'), ('test', 'train')]),
-                              ('model', [(3, 7), (7, 3)])]
+    # decodingnode.iterables = [('dataformat', ['betas']*2),
+    #                           ('approach', ['traintest']*2),
+    #                           ('task', [('train', 'test'), ('test', 'train')]),
+    #                           ('model', [(5, 33), (33, 5)])]
+    # decodingnode.synchronize = True
+    decodingnode.iterables = [('dataformat', ['betas']),
+                              ('approach', ['traintest']),
+                              ('task', [('train', 'test')]),
+                              ('model', [(5, 33)])]
     decodingnode.synchronize = True
     
     # Gather results
@@ -299,7 +305,7 @@ def main():
                       name='savingnode', overwrite=True)
     
     # --------------------------------------
-    savingnode.inputs.out_file = 'results_main_nothresh_1718_m7.csv'
+    savingnode.inputs.out_file = 'results_test.csv'#results_main_nothresh_1718_m33.csv'
     print('***********************************')
     print('Output file:', savingnode.inputs.out_file)
     print('***********************************')
@@ -313,7 +319,7 @@ def main():
                      (partialjoinnode, savingnode, [('this_reslist', 'res_list')])])
     
     # Workflow settings
-    templatecmd = '#!/bin/sh\necho `date "+%Y%m%d-%H%M%S"`\nmodule load anaconda3/5.0.0\nsource activate giacomo\n'
+    templatecmd = '#!/bin/sh\necho `date "+%Y%m%d-%H%M%S"`\nconda activate giacomo37\n'
 
     MVPA_wf.config['execution']['poll_sleep_duration'] = 1
     MVPA_wf.config['execution']['job_finished_timeout'] = 120
@@ -327,7 +333,8 @@ def main():
     # Run workflow
     #MVPA_wf.run()
     MVPA_wf.run('PBS', plugin_args={'max_jobs' : 300, 'qsub_args': '-l walltime=02:00:00,mem=16g', 
-                                   'max_tries':3,'retry_timeout': 5, 'max_jobname_len': 15})
+                                    'max_tries':3,'retry_timeout': 5, 'max_jobname_len': 15,
+                                    'template': templatecmd})
 
 # ---------------------------------------------------------------------------------
     

@@ -136,13 +136,13 @@ def contrastspecify(spm_mat_file):
     
 def main():
     
-    use_FIR = True
+    use_FIR = False
     
     # Utilities
     
     # Identity interface
     subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
-    #subjlist = ['sub-002']
+    #subjlist = ['sub-001']
     
     subjinfo = Node(IdentityInterface(fields=['sub']), name='subjinfo')
     subjinfo.iterables = [('sub', subjlist)]
@@ -183,7 +183,7 @@ def main():
                             function=modelspecify), name='spec_model')
 
     spec_model.itersource = ('get_events', 'task')
-    spec_model.iterables = [('model', {'test': [32]})]
+    spec_model.iterables = [('model', {'test': [33]})]
     
     add_motion_reg = Node(Function(input_names=['subj_info', 'task', 'use_motion_reg', 'motpar'],
                                output_names=['subj_info'],
@@ -281,7 +281,7 @@ def main():
 
     # run using PBS:
     #model_wf.run()
-    model_wf.run('PBS', plugin_args={'max_jobs' : 100, 'qsub_args': '-l walltime=1:00:00,mem=16g', 'max_tries':3,'retry_timeout': 5, 'max_jobname_len': 15})
+    model_wf.run('PBS', plugin_args={'max_jobs' : 100, 'qsub_args': '-l nodes=1:ppn=1,walltime=1:00:00,mem=16g', 'max_tries':3,'retry_timeout': 5, 'max_jobname_len': 15})
     
 if __name__=="__main__":
     main()

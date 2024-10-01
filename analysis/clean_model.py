@@ -1,11 +1,9 @@
 import os
 import shutil
 
-def main(task, model):
+def main(task, model, fir=False, contrasts=False):
     betadir = '../../bids/derivatives/spm-preproc/derivatives/spm-stats/betas/'
     contrdir = '../../bids/derivatives/spm-preproc/derivatives/spm-stats/contrasts/'
-    fir = False
-    contrasts = False
     subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
     for s in subjlist:
         thisbetadir = os.path.join(betadir, s, task, f'model_{model}')
@@ -25,5 +23,5 @@ def main(task, model):
                 print(thisbetadir, 'not found.')
                 
 if __name__=="__main__":
-    main('test', 11)
+    main('test', 33, fir=False, contrasts=False)
         

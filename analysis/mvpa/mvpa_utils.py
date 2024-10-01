@@ -56,14 +56,14 @@ def split_views(DS, opt):
         DS_B = DS[np.core.defchararray.find(DS.sa.targets,'B')!=-1]
         return (DS_A, DS_B)
     
-    elif (opt.task=='train' and opt.model==5) or (opt.task=='test' and opt.model in [15, 17, 21, 24, 29, 31]):
+    elif (opt.task=='train' and opt.model==5) or (opt.task=='test' and opt.model in [15, 17, 21, 24, 29, 31, 33]):
         
         DS_30 = DS[np.core.defchararray.find(DS.sa.targets,'30')!=-1]
         DS_90 = DS[np.core.defchararray.find(DS.sa.targets,'90')!=-1]
         return (DS_30, DS_90)
         
     else:
-        raise Exception('Task: {:s}, Model: {:s} does not support separate view decoding!'.format(opt.task, opt.model))
+        raise Exception('Task: {:s}, Model: {:g} does not support separate view decoding!'.format(opt.task, opt.model))
     
 # -------------------------------------------------------------------------------------------------
 

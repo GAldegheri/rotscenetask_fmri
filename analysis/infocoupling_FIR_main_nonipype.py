@@ -219,7 +219,7 @@ def save_univar_ts(univar_df, sub, roi):
     import os
     outdir = os.path.join('/project/3018040.05/',
                           'FIR_timeseries', 'univariate',
-                          'test_m30')
+                          'test_m32')
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
     univar_df.to_pickle(os.path.join(outdir, f'{sub}_{roi}.pkl'))
@@ -239,7 +239,7 @@ def correlate_timeseqs(tc, sub, roi, sample_runs=None, test_runs=False):
     tc = tc.groupby(['delay', 'expected']).mean().reset_index()
     
     # 9 instead of 30
-    univar_df, wholebrainDS = load_univar_ts(sub, 'test', 9, src_roi=None)
+    univar_df, wholebrainDS = load_univar_ts(sub, 'test', 32, src_roi=None)
     
     if sample_runs is not None:
         chosenruns = pick_runs(sample_runs, univar_df.run.max(), sub, negative=test_runs)
@@ -247,7 +247,7 @@ def correlate_timeseqs(tc, sub, roi, sample_runs=None, test_runs=False):
     else:
         chosenruns = None
     
-    univar_df = univar_df.groupby(['delay', 'expected']).mean().reset_index()
+    univar_df = univar_df.groupby(['delay', 'expected']).agg({'samples': 'mean'}).reset_index()
     
     # Get (n. voxels x n. timepoints) arrays for exp and unexp
     exp_univar_array = np.vstack(univar_df[univar_df.expected==1].samples).T
@@ -286,7 +286,7 @@ def save_corrmaps(exp_map, unexp_map, sub, roi, chosenruns):
     import os
     
     outdir = os.path.join('/project/3018040.05/',
-                          'FIR_correlations', 'test_m29_train_m9', roi)
+                          'FIR_correlations', 'test_m31_train_m5', roi)
     
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
@@ -316,7 +316,7 @@ def granger_timeseqs(tc, sub, roi, chosenruns, src_roi):
     
     tc = tc.groupby(['delay', 'expected']).mean().reset_index()
     
-    univar_df, _ = load_univar_ts(sub, 'test', 30, chosenruns, src_roi=src_roi)
+    univar_df, _ = load_univar_ts(sub, 'test', 32, chosenruns, src_roi=src_roi)
     
     # Compute Granger causality tests:
     uv_ts_exp = np.mean(np.vstack(univar_df[univar_df.expected==True]['samples']), axis=1)
@@ -352,14 +352,14 @@ def main(sub, roi):
     print('Starting decoding...')
     allres, sub, roi, chosenruns = decode_FIR_timecourses(sub, roi, 
                                               ('train', 'test'),
-                                              (5, 29), 'traintest',
+                                              (5, 31), 'traintest',
                                               sample_runs=None, test_runs=False)
     print('Done! Saving timeseries files...')
     save_timeseqs(allres, sub, roi, chosenruns=chosenruns)
     print('Saved multivariate timeseries files.')
-    print('Loading univariate sequences...')
-    univar_df, _ = load_univar_ts(sub, 'test', 9)
-    # save_univar_ts(univar_df, sub, 'glasser-v5_R')
+    #print('Loading univariate sequences...')
+    #univar_df, _ = load_univar_ts(sub, 'test', 32)
+    #save_univar_ts(univar_df, sub, 'glasser-v5_R')
     # print('Saved univariate timeseries files.')
     # print('Done! Computing correlations...')
     exp_map, unexp_map, sub, roi, chosenruns = correlate_timeseqs(allres, sub, roi)
@@ -373,15 +373,15 @@ def main(sub, roi):
 
 if __name__=="__main__":
     # Create the parser
-    # parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
 
     # # Add arguments
-    # parser.add_argument("--sub", required=True, type=str, help="Subject")
-    # parser.add_argument("--roi", required=True, type=str, help="ROI")
+    parser.add_argument("--sub", required=True, type=str, help="Subject")
+    parser.add_argument("--roi", required=True, type=str, help="ROI")
 
     # # Parse arguments
-    # args = parser.parse_args()
+    args = parser.parse_args()
 
     # Call the main function with the args namespace
-    #main(args.sub, args.roi)
-    main('sub-001', 'ba-17-18_contr-objscrvsbas_top-500_nothresh')
+    main(args.sub, args.roi)
+    #main('sub-001', 'ba-17-18_contr-objscrvsbas_top-500_nothresh')
