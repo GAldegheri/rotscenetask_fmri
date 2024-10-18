@@ -23,5 +23,5 @@ def main(task, model, fir=False, contrasts=False):
                 print(thisbetadir, 'not found.')
                 
 if __name__=="__main__":
-    main('test', 33, fir=False, contrasts=False)
+    main('test', 34, fir=False, contrasts=False)
         

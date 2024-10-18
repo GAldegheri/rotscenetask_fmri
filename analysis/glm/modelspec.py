@@ -1105,7 +1105,7 @@ def specify_model_test(eventsfile, model, behav):
         for o in onsets:
             durations.append([0] * len(o))
             
-    elif model in [28, 31, 33]:
+    elif model in [28, 31, 33, 35]:
         
         subjid = re.search(r"sub-\d+", eventsfile).group(0)
         runno = re.search(r"run-\d+", eventsfile).group(0)
@@ -1116,6 +1116,8 @@ def specify_model_test(eventsfile, model, behav):
             random.seed((subjid+runno)*2)
         elif model==33:
             random.seed((subjid+runno)*3)
+        elif model==35:
+            random.seed((subjid+runno)*4)
         
         # events: 7 (first probe)
         conditions = ['A_30_exp_1', 'A_30_exp_2', 'A_30_exp_3', 'A_30_unexp',
@@ -1206,7 +1208,7 @@ def specify_model_test(eventsfile, model, behav):
         for o in onsets:
             durations.append([0] * len(o))
             
-    elif model in [30, 32, 34]:
+    elif model in [30, 32, 34, 36]:
         
         subjid = re.search(r"sub-\d+", eventsfile).group(0)
         runno = re.search(r"run-\d+", eventsfile).group(0)
@@ -1216,6 +1218,8 @@ def specify_model_test(eventsfile, model, behav):
             random.seed((subjid+runno)*2)
         elif model == 34:
             random.seed((subjid+runno)*3)
+        elif model == 36:
+            random.seed((subjid+runno)*4)
         
         # events: 7 (first probe)
         conditions = ['expected_1', 'expected_2', 'expected_3', 'unexpected']

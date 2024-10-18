@@ -153,7 +153,7 @@ def save_timeseqs(tc, sub, roi, chosenruns=None):
     import os
     outdir = os.path.join('/project/3018040.05/',
                           'FIR_timeseries', 'decoding',
-                          'test_m31')
+                          'test_m35')
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
         
@@ -219,7 +219,7 @@ def save_univar_ts(univar_df, sub, roi):
     import os
     outdir = os.path.join('/project/3018040.05/',
                           'FIR_timeseries', 'univariate',
-                          'test_m32')
+                          'test_m36')
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
     univar_df.to_pickle(os.path.join(outdir, f'{sub}_{roi}.pkl'))
@@ -238,8 +238,7 @@ def correlate_timeseqs(tc, sub, roi, sample_runs=None, test_runs=False):
     n_timepoints = tc.delay.nunique()
     tc = tc.groupby(['delay', 'expected']).mean().reset_index()
     
-    # 9 instead of 30
-    univar_df, wholebrainDS = load_univar_ts(sub, 'test', 32, src_roi=None)
+    univar_df, wholebrainDS = load_univar_ts(sub, 'test', 36, src_roi=None)
     
     if sample_runs is not None:
         chosenruns = pick_runs(sample_runs, univar_df.run.max(), sub, negative=test_runs)
@@ -286,7 +285,7 @@ def save_corrmaps(exp_map, unexp_map, sub, roi, chosenruns):
     import os
     
     outdir = os.path.join('/project/3018040.05/',
-                          'FIR_correlations', 'test_m31_train_m5', roi)
+                          'FIR_correlations', 'test_m35', roi)
     
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
@@ -316,7 +315,7 @@ def granger_timeseqs(tc, sub, roi, chosenruns, src_roi):
     
     tc = tc.groupby(['delay', 'expected']).mean().reset_index()
     
-    univar_df, _ = load_univar_ts(sub, 'test', 32, chosenruns, src_roi=src_roi)
+    univar_df, _ = load_univar_ts(sub, 'test', 36, chosenruns, src_roi=src_roi)
     
     # Compute Granger causality tests:
     uv_ts_exp = np.mean(np.vstack(univar_df[univar_df.expected==True]['samples']), axis=1)
@@ -352,13 +351,13 @@ def main(sub, roi):
     print('Starting decoding...')
     allres, sub, roi, chosenruns = decode_FIR_timecourses(sub, roi, 
                                               ('train', 'test'),
-                                              (5, 31), 'traintest',
+                                              (5, 35), 'traintest',
                                               sample_runs=None, test_runs=False)
     print('Done! Saving timeseries files...')
     save_timeseqs(allres, sub, roi, chosenruns=chosenruns)
     print('Saved multivariate timeseries files.')
     #print('Loading univariate sequences...')
-    #univar_df, _ = load_univar_ts(sub, 'test', 32)
+    #univar_df, _ = load_univar_ts(sub, 'test', 30)
     #save_univar_ts(univar_df, sub, 'glasser-v5_R')
     # print('Saved univariate timeseries files.')
     # print('Done! Computing correlations...')

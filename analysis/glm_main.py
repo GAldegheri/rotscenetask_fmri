@@ -136,13 +136,13 @@ def contrastspecify(spm_mat_file):
     
 def main():
     
-    use_FIR = False
+    use_FIR = True
     
     # Utilities
     
     # Identity interface
     subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
-    #subjlist = ['sub-001']
+    #subjlist = ['sub-010']
     
     subjinfo = Node(IdentityInterface(fields=['sub']), name='subjinfo')
     subjinfo.iterables = [('sub', subjlist)]
@@ -183,7 +183,7 @@ def main():
                             function=modelspecify), name='spec_model')
 
     spec_model.itersource = ('get_events', 'task')
-    spec_model.iterables = [('model', {'test': [33]})]
+    spec_model.iterables = [('model', {'test': [36]})]
     
     add_motion_reg = Node(Function(input_names=['subj_info', 'task', 'use_motion_reg', 'motpar'],
                                output_names=['subj_info'],

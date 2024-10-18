@@ -195,10 +195,10 @@ def main():
      
     # Subject and ROI list
     
-    #subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
-    subjlist = ['sub-001']
+    subjlist = [f'sub-{i:03d}' for i in range(1, 36)]
+    #subjlist = ['sub-001']
     
-    rois_to_use = ['ba-17-18_{:s}_contr-objscrvsbas']
+    rois_to_use = ['ba-19-37_{:s}_contr-objscrvsbas']
     nothresh = True
     
     roilist = []
@@ -248,7 +248,7 @@ def main():
         else:
             roilist.append(r + '_allsignif')
 
-    full_rois = ['ba-17-18_{:s}']
+    full_rois = ['ba-19-37_{:s}']
     
     for r in full_rois:
         if '{:s}' in r:
@@ -258,7 +258,7 @@ def main():
             roilist.append(r)
     
     #roilist = ['ba-17-18_L_contr-objscrvsbas_top-1000', 'ba-17-18_R_contr-objscrvsbas_top-1000']
-    roilist = ['ba-17-18_L_contr-objscrvsbas_top-1500_nothresh']
+    #roilist = ['ba-17-18_L_contr-objscrvsbas_top-1500_nothresh']
     
     print('------------------- ROI list: -------------------')
     print(roilist)
@@ -274,21 +274,10 @@ def main():
                               function=decoding_approaches),
                      name='decodingnode', overwrite=True)
     
-    # decodingnode.iterables = [('dataformat', ['betas']*4),
-    #                           ('approach', ['traintest']*4),
-    #                           ('task', [('train', 'test'), ('test', 'train'),
-    #                                     ('train', 'test'), ('test', 'train')]),
-    #                           ('model', [(5, 15), (15, 5),
-    #                                      (5, 24), (24, 5)])]
-    # decodingnode.iterables = [('dataformat', ['betas']*2),
-    #                           ('approach', ['traintest']*2),
-    #                           ('task', [('train', 'test'), ('test', 'train')]),
-    #                           ('model', [(5, 33), (33, 5)])]
-    # decodingnode.synchronize = True
-    decodingnode.iterables = [('dataformat', ['betas']),
-                              ('approach', ['traintest']),
-                              ('task', [('train', 'test')]),
-                              ('model', [(5, 33)])]
+    decodingnode.iterables = [('dataformat', ['betas']*2),
+                              ('approach', ['traintest']*2),
+                              ('task', [('train', 'test'), ('test', 'train')]),
+                              ('model', [(5, 29), (29, 5)])]
     decodingnode.synchronize = True
     
     # Gather results
@@ -305,7 +294,7 @@ def main():
                       name='savingnode', overwrite=True)
     
     # --------------------------------------
-    savingnode.inputs.out_file = 'results_test.csv'#results_main_nothresh_1718_m33.csv'
+    savingnode.inputs.out_file = 'results_main_nothresh_1937_m29.csv'
     print('***********************************')
     print('Output file:', savingnode.inputs.out_file)
     print('***********************************')
@@ -332,9 +321,8 @@ def main():
     
     # Run workflow
     #MVPA_wf.run()
-    MVPA_wf.run('PBS', plugin_args={'max_jobs' : 300, 'qsub_args': '-l walltime=02:00:00,mem=16g', 
-                                    'max_tries':3,'retry_timeout': 5, 'max_jobname_len': 15,
-                                    'template': templatecmd})
+    MVPA_wf.run('PBS', plugin_args={'max_jobs' : 100, 'qsub_args': '-l nodes=1:ppn=1,walltime=02:00:00,mem=16g', 
+                                    'max_tries':3, 'retry_timeout': 5, 'max_jobname_len': 15})
 
 # ---------------------------------------------------------------------------------
     
