@@ -98,7 +98,7 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False,
             for d in avgdiffs[avgdiffs['hemi']=='L']['difference']:
                 ix, _ = find_nearest(suppL[0], d)
                 densities_left.append(densL[0][ix])
-            densities_left = np.array(densities_left).reshape(nsubjs,1)
+            densities_left = np.array(densities_left).reshape(nsubjs, 1)
             scatter_left = -0.04-np.random.uniform(size=(nsubjs,1))*densities_left*0.15
             plt.scatter(scatter_left, avgdiffs[avgdiffs['hemi']=='L']['difference'], color='black', alpha=.3)
             densities_right = []
@@ -143,6 +143,92 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False,
     # if saveimg:
     #     plt.savefig('results_plots/EVC_nvox_distance.pdf')
     #plt.show()
+    
+def plot_univar_by_nvoxels(data):
+    fpath = Path("./fonts/HelveticaWorld-Regular.ttf")
+    fontprop = FontProperties(fname=fpath)
+    
+    avgdata = data.copy()
+    nsubjs = avgdata.subject.nunique()
+    maxvoxels = avgdata.nvoxels.max()
+    
+    # sort n. voxels and make categorical (for plotting)
+    avgdata.sort_values('nvoxels', inplace=True, ascending=True)
+    avgdata.loc[:, 'nvoxels'] = avgdata.loc[:, 'nvoxels'].astype(str)
+    avgdata.loc[:, 'nvoxels'] = pd.Categorical(avgdata.loc[:, 'nvoxels'], 
+                                               categories=avgdata.nvoxels.unique(), ordered=True)
+    
+    fig = fig = plt.figure(figsize=(20,10))
+    gs = GridSpec(4, 4, figure=fig, height_ratios=[1, 4, 4, 1])
+    ax0 = fig.add_subplot(gs[1:3, 1:])
+    with sns.axes_style('white'):
+        sns.lineplot(data=avgdata.groupby(['subject', 'nvoxels', 'condition']).mean().reset_index(), 
+                     x='nvoxels', y='mean_beta',
+                     hue='condition', hue_order=['expected', 'unexpected'], #linewidth=1,
+                     palette='Dark2', ci=68, marker='o', mec='none', markersize=10)
+    plt.yticks(font=fpath, fontsize=28, ticks=list(np.arange(-6.0, 1.0, 1.0)))
+    ax0.set(ylim=(-6.0, 1.0), xticks=['100', '500']+[str(x) for x in np.arange(1000, maxvoxels+1000, 1000)])
+    ax0.set_xlabel('Number of Voxels', font=fpath, fontsize=32)
+    ax0.set_ylabel('Mean Beta Value (a.u.)', font=fpath, fontsize=32)
+    plt.xticks(font=fpath, fontsize=28)
+    plt.margins(0.02)
+    ax0.legend_.set_title(None)
+    fontprop.set_size(28)
+    ax0.legend(['Congruent', 'Incongruent'], prop=fontprop, frameon=False)
+    ax0.spines['top'].set_visible(False)
+    ax0.spines['right'].set_visible(False)
+    ax0.spines['left'].set_linewidth(2)
+    ax0.spines['bottom'].set_linewidth(2)
+    ax0.axhline(0.0, linestyle='--', color='black', linewidth=2)
+    
+    # average violin plot
+    avgdiffs = meanbetas_to_diffs(avgdata).groupby(['subject', 'hemi']).mean().reset_index()
+    with sns.axes_style('white'):
+        ax1 = fig.add_subplot(gs[:, 0])
+        _, suppL, densL = pt.half_violinplot(y='difference', data=avgdiffs[avgdiffs['hemi']=='L'], color='.8', 
+                                                width=.3, inner=None, bw=.4, flip=False, CI=True, offset=0.04)
+        _, suppR, densR = pt.half_violinplot(y='difference', data=avgdiffs[avgdiffs['hemi']=='R'], color='.8', 
+                                            width=.3, inner=None, bw=.4, flip=True, CI=True, offset=0.04)
+        
+        densities_left = []
+        for d in avgdiffs[avgdiffs['hemi']=='L']['difference']:
+            ix, _ = find_nearest(suppL[0], d)
+            densities_left.append(densL[0][ix])
+        densities_left = np.array(densities_left).reshape(nsubjs, 1)
+        scatter_left = -0.04-np.random.uniform(size=(nsubjs, 1)) * densities_left * 0.15
+        plt.scatter(scatter_left, avgdiffs[avgdiffs['hemi']=='L']['difference'], color='black',alpha=.3)
+        densities_right = []
+        for d in avgdiffs[avgdiffs['hemi']=='R']['difference']:
+            ix, _ = find_nearest(suppR[0], d)
+            densities_right.append(densR[0][ix])
+        densities_right = np.array(densities_right).reshape(nsubjs,1)
+        scatter_right = 0.04+np.random.uniform(size=(nsubjs,1))*densities_right*0.15
+        plt.scatter(scatter_right, avgdiffs[avgdiffs['hemi']=='R']['difference'], color='black', alpha=.3)
+        
+        # Get mean and 95% CI:
+        meandiff = avgdiffs['difference'].mean()
+        tstats = pg.ttest(avgdiffs.groupby(['subject']).mean().reset_index()['difference'], 0.0)
+        ci95 = tstats['CI95%'][0]
+        
+        for tick in ax1.get_xticks():
+            ax1.plot([tick, tick], [ci95[0], ci95[1]], lw=3, color='k')
+            ax1.plot([tick-0.01, tick+0.01], [ci95[0], ci95[0]], lw=3, color='k')
+            ax1.plot([tick-0.01, tick+0.01], [ci95[1], ci95[1]], lw=3, color='k')
+            ax1.plot(tick, meandiff, 'o', markersize=15, color='black')
+        
+        ax1.axhline(0.0, linestyle='--', color='black', linewidth=2)
+        plt.yticks(font=fpath, fontsize=32) 
+        ax1.set_xlabel('Average', font=fpath, fontsize=32)
+        ax1.set_ylabel('Δ Mean Beta (a.u.)', font=fpath, fontsize=32)
+        ax1.set(ylim=(-2.5, 2.5))
+        ax1.axes_style = 'white'
+        ax1.spines['top'].set_visible(False)
+        ax1.spines['right'].set_visible(False)
+        ax1.spines['bottom'].set_visible(False)
+        ax1.spines['left'].set_linewidth(2)
+    plt.subplots_adjust(wspace=0.4)
+    plt.tight_layout()
+        
 
 def get_tfce_stats(data, measure='distance', n_perms=10000):
     subxvoxels = df_to_array_tfce(data.groupby(['subject','nvoxels','expected']).mean().reset_index(),
@@ -152,6 +238,17 @@ def get_tfce_stats(data, measure='distance', n_perms=10000):
         subxvoxels, n_jobs=1, threshold=threshold_tfce, adjacency=None,
         n_permutations=n_perms, out_type='mask')
     return t_obs, clusters, cluster_pv, H0
+
+def meanbetas_to_diffs(df):
+    diffs = []
+    for nv in df.nvoxels.unique():
+        for hemi in df.hemi.unique():
+            for sub in df[(df['nvoxels']==nv)&(df['hemi']==hemi)].subject.unique():
+                thissub = df[(df['nvoxels']==nv)&(df['hemi']==hemi)&(df['subject']==sub)]
+                thisdiff = thissub[thissub['condition']=='expected']['mean_beta'].values[0] - \
+                    thissub[thissub['condition']=='unexpected']['mean_beta'].values[0]
+                diffs.append({'subject': sub, 'nvoxels': nv, 'hemi': hemi, 'difference': thisdiff})
+    return pd.DataFrame(diffs)
 
 def accs_to_diffs(df, measure='distance'):
     diffs = []
