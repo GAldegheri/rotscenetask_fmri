@@ -33,16 +33,15 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False,
     nsubjs = avgdata.subject.nunique()
     maxvoxels = avgdata.nvoxels.max()
     
-    # sort n. voxels and make categorical
+    if tfce_pvals is None:
+        _, _, tfce_pvals, _ = get_tfce_stats(avgdata.groupby(['subject','nvoxels','expected']).mean().reset_index(),
+                                             measure=measure, n_perms=n_perms)
+        
+    # sort n. voxels and make categorical (for plotting)
     avgdata.sort_values('nvoxels', inplace=True, ascending=True)
     avgdata.loc[:, 'nvoxels'] = avgdata.loc[:, 'nvoxels'].astype(str)
     avgdata.loc[:, 'nvoxels'] = pd.Categorical(avgdata.loc[:, 'nvoxels'], 
                                                categories=avgdata.nvoxels.unique(), ordered=True)
-    
-    
-    if tfce_pvals is None:
-        _, _, tfce_pvals, _ = get_tfce_stats(avgdata.groupby(['subject','nvoxels','expected']).mean().reset_index(),
-                                             measure=measure, n_perms=n_perms)
             
     fig = plt.figure(figsize=(20,10))
     gs = GridSpec(4, 4, figure=fig, height_ratios=[1, 4, 4, 1])
@@ -55,11 +54,22 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False,
                      x='nvoxels', y=measure,
                      hue='expected', hue_order=[True, False], #linewidth=1,
                      palette='Dark2', ci=68, marker='o', mec='none', markersize=10) #plot_kws=dict(edgecolor="none")) #markersize=10
-        plt.yticks(font=fpath, fontsize=28, ticks=list(np.arange(0., 0.45, 0.1)))
-        #ax0.set(ylim=(0.05, 0.35), xticks=['100']+[str(x) for x in np.arange(500, 3500, 500)])
-        ax0.set(ylim=(0.0, 0.45), xticks=['100', '500']+[str(x) for x in np.arange(1000, maxvoxels+1000, 1000)])
+        if measure == 'distance':
+            ylabel_left = 'Classifier Information (a.u.)'
+            ylimits = (0.0, 0.45)
+            yticks = list(np.arange(0., 0.45, 0.1))
+            marker_bottom = 0.02
+            marker_top = 0.04
+        elif measure == 'correct':
+            ylabel_left = 'Decoding Accuracy (a.u.)'
+            ylimits = (0.5, 0.75)
+            yticks = list(np.arange(0.5, 0.75, 0.1))
+            marker_bottom = 0.52
+            marker_top = 0.54
+        plt.yticks(font=fpath, fontsize=28, ticks=yticks)
+        ax0.set(ylim=ylimits, xticks=['100', '500']+[str(x) for x in np.arange(1000, maxvoxels+1000, 1000)])
         ax0.set_xlabel('Number of Voxels', font=fpath, fontsize=32)
-        ax0.set_ylabel('Classifier Information (a.u.)', font=fpath, fontsize=32)
+        ax0.set_ylabel(ylabel_left, font=fpath, fontsize=32)
         plt.xticks(font=fpath, fontsize=28)
         plt.margins(0.02)
         ax0.legend_.set_title(None)
@@ -71,10 +81,10 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False,
         ax0.spines['bottom'].set_linewidth(2)
         for x in np.arange(0, len(tfce_pvals)):
             if tfce_pvals[x] < 0.01:
-                ax0.scatter(x, 0.02, marker=(6, 2, 0), s=180, color='k', linewidths=2.)
-                ax0.scatter(x, 0.04, marker=(6, 2, 0), s=180, color='k', linewidths=2.)
+                ax0.scatter(x, marker_bottom, marker=(6, 2, 0), s=180, color='k', linewidths=2.)
+                ax0.scatter(x, marker_top, marker=(6, 2, 0), s=180, color='k', linewidths=2.)
             elif tfce_pvals[x] < 0.05:
-                ax0.scatter(x, 0.02, marker=(6, 2, 0), s=180, color='k', linewidths=2.)
+                ax0.scatter(x, marker_bottom, marker=(6, 2, 0), s=180, color='k', linewidths=2.)
     if right_part:
         avgdiffs = accs_to_diffs(avgdata).groupby(['subject', 'hemi']).mean().reset_index()
         with sns.axes_style('white'):
@@ -117,7 +127,11 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False,
             ax1.axhline(0.0, linestyle='--', color='black', linewidth=2)
             plt.yticks(font=fpath, fontsize=32) 
             ax1.set_xlabel('Average', font=fpath, fontsize=32)
-            ax1.set_ylabel('Δ Classifier information (a.u.)', font=fpath, fontsize=32)
+            if measure == 'distance':
+                ylabel_right = 'Δ Classifier Information (a.u.)'
+            elif measure == 'correct':
+                ylabel_right = 'Δ Decoding Accuracy (a.u.)'
+            ax1.set_ylabel(ylabel_right, font=fpath, fontsize=32)
             ax1.set(ylim=(-0.7, 0.7))
             ax1.axes_style = 'white'
             ax1.spines['top'].set_visible(False)
@@ -196,16 +210,16 @@ def pretty_behav_plot(avgdata, measure='Hit', excl=True, fname=None, saveimg=Fal
     sns.barplot(x='Consistent', y=measure, data=avgdata, ci=68, order=[1.0, 0.0], 
                 palette='Set2', ax=ax0, errcolor='black', edgecolor='black', linewidth=2, capsize=.2)
     if measure=='Hit':
-        ax0.set_ylabel('Accuracy', font=fpath, fontsize=30)
+        ax0.set_ylabel('Accuracy', font=fpath, fontsize=34)
     elif measure=='DPrime':
-        ax0.set_ylabel('d\'', font=fpath, fontsize=30)
+        ax0.set_ylabel('d\'', font=fpath, fontsize=34)
     elif measure=='Criterion':
-        ax0.set_ylabel('Criterion', font=fpath, fontsize=30)
-    plt.yticks(fontsize=24) 
+        ax0.set_ylabel('Criterion', font=fpath, fontsize=34)
+    plt.yticks(font=fpath, fontsize=28) 
     ax0.tick_params(axis='y', direction='out', color='black', length=10, width=2)
     ax0.tick_params(axis='x', length=0, pad=15)
     ax0.set_xlabel(None)
-    ax0.set_xticklabels(['Cong.', 'Incong.'], font=fpath, fontsize=30)
+    ax0.set_xticklabels(['Cong.', 'Incong.'], font=fpath, fontsize=34)
     ax0.spines['left'].set_linewidth(2)
     ax0.spines['bottom'].set_linewidth(2)
     ax0.spines['right'].set_visible(False)
@@ -231,18 +245,18 @@ def pretty_behav_plot(avgdata, measure='Hit', excl=True, fname=None, saveimg=Fal
         ax1.plot([tick-0.03, tick+0.03], [ci95[0], ci95[0]], lw=3, color='k')
         ax1.plot([tick-0.03, tick+0.03], [ci95[1], ci95[1]], lw=3, color='k')
     ax1.axhline(0.0, linestyle='--', color='black')
-    plt.yticks(fontsize=24) 
+    plt.yticks(font=fpath, fontsize=28) 
     if measure=='Hit':
-        ax1.set_ylabel('Δ Accuracy', font=fpath, fontsize=30)
+        ax1.set_ylabel('Δ Accuracy', font=fpath, fontsize=34)
         if excl:
             ax1.set(ylim=(-0.2, 0.4))
         else:
             ax1.set(ylim=(-0.3, 0.4))
     elif measure=='DPrime':
-        ax1.set_ylabel('Δ d\'', font=fpath, fontsize=30)
+        ax1.set_ylabel('Δ d\'', font=fpath, fontsize=34)
         ax1.set(ylim=(-2., 2.))
     elif measure=='Criterion':
-        ax1.set_ylabel('Δ Criterion', font=fpath, fontsize=30)
+        ax1.set_ylabel('Δ Criterion', font=fpath, fontsize=34)
         ax1.set(ylim=(-1.0, 1.25))
     ax1.axes_style = 'white'
     ax1.tick_params(axis='y', direction='out', color='black', length=10, width=2)

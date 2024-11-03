@@ -14,7 +14,7 @@ def create_job_script(script_path, args_str, script_name):
     with open(script_name, 'w') as file:
         file.write("#!/bin/bash\n")
         file.write("#PBS -N job_{}\n".format(os.path.basename(script_name)))
-        file.write("#PBS -l walltime=01:00:00,mem=16g\n")  # Adjust walltime as needed
+        file.write("#PBS -l walltime=04:00:00,mem=16g\n")  # Adjust walltime as needed
         file.write("#PBS -l nodes=1:ppn=1\n")      # Adjust resources as needed
         file.write("#PBS -q batch\n")              # Adjust queue as needed
         file.write("#PBS -o torque/jobs/output/{}_output.txt\n".format(os.path.basename(script_name)))
