@@ -164,7 +164,7 @@ def decode_traintest(trainDS, testDS, trainopt, testopt):
                                                                        split='both', thirds='none')
                 
             elif isAllViews(trainopt) and not isAllViews(testopt):
-                    
+                 
                 # only split trainDS into views
                 res_exp = decode_viewspecific(trainDS_exp, testDS, trainopt, testopt, \
                                                                    split='train', thirds='train')
@@ -226,7 +226,10 @@ def decode_traintest(trainDS, testDS, trainopt, testopt):
 
                 res_unexp = trainandtest_sklearn(trainDS, testDS_unexp, zscore_data=True)
          
-        #else: # exp/unexp without dividing in thirds - not really a thing
+        else: 
+                res_exp = trainandtest_sklearn(trainDS, testDS_exp, zscore_data=True)
+                res_unexp = trainandtest_sklearn(trainDS, testDS_unexp, zscore_data=True)
+                
         
         res_exp['expected'] = True
         res_unexp['expected'] = False

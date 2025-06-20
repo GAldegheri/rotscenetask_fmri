@@ -182,6 +182,23 @@ def specify_model_train(eventsfile, model):
                 onsets.append([events_B.iloc[mb-1]['onset']])
                 durations.append([events_B.iloc[mb-1]['duration']])
         
+    elif model==8:
+        
+        A90indx = (events['view']=='A') & (events['rotation']==90)
+        B90indx = (events['view']=='B') & (events['rotation']==90)
+        events_A90 = events.loc[(events['trial_type']=='miniblock') & (A90indx)]
+        events_B90 = events.loc[(events['trial_type']=='miniblock') & (B90indx)]
+        
+        n_miniblocks = 5
+        conditions = []
+        for mb in range(1, n_miniblocks+1):
+            conditions.append('A90_{:d}'.format(mb))
+            onsets.append([events_A90.iloc[mb-1]['onset']])
+            durations.append([events_A90.iloc[mb-1]['duration']])
+            # -----------------------
+            conditions.append('B90_{:d}'.format(mb))
+            onsets.append([events_B90.iloc[mb-1]['onset']])
+            durations.append([events_B90.iloc[mb-1]['duration']])
     else:
         raise Exception('"{:d}" is not a known model.'.format(model))
     
@@ -1239,7 +1256,56 @@ def specify_model_test(eventsfile, model, behav):
         onsets.append(list(unexptrials[unexptrials['event_no']==7].onset))
         for o in onsets:
             durations.append([0] * len(o))
+            
+    elif model==37:
         
+        subjid = re.search(r"sub-\d+", eventsfile).group(0)
+        runno = re.search(r"run-\d+", eventsfile).group(0)
+        
+        random.seed(subjid+runno)
+        
+        # events: 7 (first probe)
+        conditions = ['A_90_exp', 'A_90_unexp', 
+                      'B_90_exp', 'B_90_unexp']
+        
+        A90mask = ((behav['InitView']==1) & (behav['FinalView']==90) & (behav['Sequence_2']==15))
+        B90mask = ((behav['InitView']==2) & (behav['FinalView']==90) & (behav['Sequence_2']==15))
+        
+        A90_E_indx = behav.index[(behav['Consistent']==1) & A90mask]
+        B90_E_indx = behav.index[(behav['Consistent']==1) & B90mask]
+        
+        # the unexpected ones NEED TO BE SWAPPED:
+        # (unexpected stimulus came from the other initial viewpoint)
+        A90_U_indx = behav.index[(behav['Consistent']==0) & B90mask]
+        B90_U_indx = behav.index[(behav['Consistent']==0) & A90mask]
+        n_trials = min(len(A90_U_indx), len(B90_U_indx))
+        
+        # ---------------------------------
+        A90_E_trialnos = random.sample(list(A90_E_indx), n_trials)
+        A90_E_trials = events[events['trial_no'].isin(A90_E_trialnos)]
+        # ---------------------------------
+        B90_E_trialnos = random.sample(list(B90_E_indx), n_trials)
+        B90_E_trials = events[events['trial_no'].isin(B90_E_trialnos)]
+        # ---------------------------------
+        A90_U_trialnos = random.sample(list(A90_U_indx), n_trials)
+        A90_U_trials = events[events['trial_no'].isin(A90_U_trialnos)]
+        # ---------------------------------
+        B90_U_trialnos = random.sample(list(B90_U_indx), n_trials)
+        B90_U_trials = events[events['trial_no'].isin(B90_U_trialnos)]
+        
+        # Add to onsets and durations:
+        
+        onsets.append(list(A90_E_trials[A90_E_trials['event_no']==7].onset))
+        onsets.append(list(A90_U_trials[A90_U_trials['event_no']==7].onset))
+        
+        onsets.append(list(B90_E_trials[B90_E_trials['event_no']==7].onset))
+        onsets.append(list(B90_U_trials[B90_U_trials['event_no']==7].onset))
+        
+        conditions = [c for i, c in enumerate(conditions) if onsets[i]!=[]]
+        onsets = [o for o in onsets if o != []]
+        
+        for o in onsets:
+            durations.append([0] * len(o))
             
     else:
         raise ValueError('Model {:g} unknown!'.format(model))

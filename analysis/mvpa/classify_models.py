@@ -20,7 +20,7 @@ def isExpUnexp(opt):
     # expected and unexpected
     
     if opt.task=='test' and opt.model in [5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 19, 
-                                          20, 21, 22, 23, 24, 28, 29, 30, 31, 32, 33, 34, 35, 36]:
+                                          20, 21, 22, 23, 24, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37]:
         return True
     else:
         return False
@@ -51,7 +51,7 @@ def is30or90(opt):
 # -------------------------------------------------------------------------------------------------
  
 def isAorB(opt):
-    if (opt.task=='train' and opt.model==7) or (opt.task=='test' and opt.model in [19, 22]):
+    if (opt.task=='train' and opt.model in [7, 8]) or (opt.task=='test' and opt.model in [19, 22, 37]):
         return True
     else:
         return False
