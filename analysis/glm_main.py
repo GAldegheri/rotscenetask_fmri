@@ -167,7 +167,7 @@ def main():
 
     get_events.inputs.preproc = 'smooth'
 
-    get_events.iterables = [('task', ['train'])]
+    get_events.iterables = [('task', ['test'])]
     
     # Datasink
     datasink = Node(nio.DataSink(parameterization=True), name='datasink')
@@ -183,7 +183,7 @@ def main():
                             function=modelspecify), name='spec_model')
 
     spec_model.itersource = ('get_events', 'task')
-    spec_model.iterables = [('model', {'train': [8]})]
+    spec_model.iterables = [('model', {'test': [38]})]
     
     add_motion_reg = Node(Function(input_names=['subj_info', 'task', 'use_motion_reg', 'motpar'],
                                output_names=['subj_info'],

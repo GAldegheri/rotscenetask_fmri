@@ -203,7 +203,7 @@ def main():
     
     roilist = []
      
-    voxelnos_evc = np.arange(100, 6100, 100)
+    voxelnos_evc = np.arange(100, 3100, 100)
     voxelnos_loc = np.arange(100, 3100, 100)
     voxelnos_ppa = np.arange(100, 500, 100)
     voxelnos_1937 = np.arange(100, 6100, 100)
@@ -277,7 +277,7 @@ def main():
     decodingnode.iterables = [('dataformat', ['betas']),
                               ('approach', ['traintest']),
                               ('task', [('train', 'test')]),
-                              ('model', [(8, 37)])]
+                              ('model', [(8, 38)])]
     decodingnode.synchronize = True
     
     # Gather results
@@ -294,7 +294,7 @@ def main():
                       name='savingnode', overwrite=True)
     
     # --------------------------------------
-    savingnode.inputs.out_file = 'results_main_m37.csv'
+    savingnode.inputs.out_file = 'results_main_m38.csv'
     print('***********************************')
     print('Output file:', savingnode.inputs.out_file)
     print('***********************************')

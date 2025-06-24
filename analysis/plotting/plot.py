@@ -16,7 +16,7 @@ import os
 import ipdb
 
 
-def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False, n_perms=10000):
+def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False, n_perms=10000, fixed_ylim=True):
     """
     - data: pandas dataframe containing the data
     - tfce_pvals are provided if they have been precomputed,
@@ -132,7 +132,8 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False,
             elif measure == 'correct':
                 ylabel_right = 'Δ Decoding Accuracy (a.u.)'
             ax1.set_ylabel(ylabel_right, font=fpath, fontsize=32)
-            ax1.set(ylim=(-0.7, 0.7))
+            if fixed_ylim:
+                ax1.set(ylim=(-0.7, 0.7))
             ax1.axes_style = 'white'
             ax1.spines['top'].set_visible(False)
             ax1.spines['right'].set_visible(False)
