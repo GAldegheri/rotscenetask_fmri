@@ -43,8 +43,8 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False,
     avgdata.loc[:, 'nvoxels'] = pd.Categorical(avgdata.loc[:, 'nvoxels'], 
                                                categories=avgdata.nvoxels.unique(), ordered=True)
             
-    fig = plt.figure(figsize=(20,10))
-    gs = GridSpec(4, 4, figure=fig, height_ratios=[1, 4, 4, 1])
+    fig = plt.figure(figsize=(24, 9))
+    gs = GridSpec(4, 4, figure=fig, height_ratios=[0.2, 4.8, 4.8, 0.2])
     with sns.axes_style('white'):
         if right_part:
             ax0 = fig.add_subplot(gs[1:3, 1:])
@@ -66,14 +66,14 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False,
             yticks = list(np.arange(0.5, 0.75, 0.1))
             marker_bottom = 0.52
             marker_top = 0.54
-        plt.yticks(font=fpath, fontsize=28, ticks=yticks)
+        plt.yticks(font=fpath, fontsize=36, ticks=yticks)
         ax0.set(ylim=ylimits, xticks=['100', '500']+[str(x) for x in np.arange(1000, maxvoxels+1000, 1000)])
-        ax0.set_xlabel('Number of Voxels', font=fpath, fontsize=32)
-        ax0.set_ylabel(ylabel_left, font=fpath, fontsize=32)
-        plt.xticks(font=fpath, fontsize=28)
+        ax0.set_xlabel('Number of Voxels', font=fpath, fontsize=36)
+        ax0.set_ylabel(ylabel_left, font=fpath, fontsize=36)
+        plt.xticks(font=fpath, fontsize=36)
         plt.margins(0.02)
         ax0.legend_.set_title(None)
-        fontprop.set_size(28)
+        fontprop.set_size(36)
         ax0.legend(['Congruent', 'Incongruent'], prop=fontprop, frameon=False)
         ax0.spines['top'].set_visible(False)
         ax0.spines['right'].set_visible(False)
@@ -81,10 +81,10 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False,
         ax0.spines['bottom'].set_linewidth(2)
         for x in np.arange(0, len(tfce_pvals)):
             if tfce_pvals[x] < 0.01:
-                ax0.scatter(x, marker_bottom, marker=(6, 2, 0), s=180, color='k', linewidths=2.)
-                ax0.scatter(x, marker_top, marker=(6, 2, 0), s=180, color='k', linewidths=2.)
+                ax0.scatter(x, marker_bottom, marker=(6, 2, 0), s=180, color='k', linewidths=3.)
+                ax0.scatter(x, marker_top, marker=(6, 2, 0), s=180, color='k', linewidths=3.)
             elif tfce_pvals[x] < 0.05:
-                ax0.scatter(x, marker_bottom, marker=(6, 2, 0), s=180, color='k', linewidths=2.)
+                ax0.scatter(x, marker_bottom, marker=(6, 2, 0), s=180, color='k', linewidths=3.)
     if right_part:
         avgdiffs = accs_to_diffs(avgdata).groupby(['subject', 'hemi']).mean().reset_index()
         with sns.axes_style('white'):
@@ -125,13 +125,17 @@ def plot_by_nvoxels(data, measure='distance', tfce_pvals=None, right_part=False,
                 #ax1.add_patch(circlemarker)
                 ax1.plot(tick,meandiff, 'o', markersize=15, color='black')
             ax1.axhline(0.0, linestyle='--', color='black', linewidth=2)
-            plt.yticks(font=fpath, fontsize=32) 
-            ax1.set_xlabel('Average', font=fpath, fontsize=32)
+            plt.yticks(font=fpath, fontsize=36)
+            # Set x-axis ticks and labels for hemisphere plot
+            ax1.set_xticks([-0.07, 0.07])  # Positions for Left and Right hemispheres
+            ax1.set_xticklabels(['Left', 'Right'], font=fpath, fontsize=36)
+            plt.xticks(font=fpath, fontsize=36)
+            ax1.set_xlabel('Hemisphere', font=fpath, fontsize=36, labelpad=16)
             if measure == 'distance':
                 ylabel_right = 'Δ Classifier Information (a.u.)'
             elif measure == 'correct':
                 ylabel_right = 'Δ Decoding Accuracy (a.u.)'
-            ax1.set_ylabel(ylabel_right, font=fpath, fontsize=32)
+            ax1.set_ylabel(ylabel_right, font=fpath, fontsize=36)
             if fixed_ylim:
                 ax1.set(ylim=(-0.7, 0.7))
             ax1.axes_style = 'white'
